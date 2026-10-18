@@ -35,3 +35,12 @@ LLVM_PROFILE_FILE="$output/game-speed.profraw" "$output/game-speed-tests"
 "${cov[@]}" show "$output/game-speed-tests" -instr-profile="$output/game-speed.profdata" \
   -format=html -output-dir="$output/html/game-speed" \
   "$root/work/zero-hour-macos/Core/GameEngine/Source/Common/FramePacer.cpp"
+
+# Exercise production network frame advancement with no render-generated messages.
+python3 "$root/work/performance-tests/network_frame_test.py" "$output/network-frame.cpp"
+"${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -D__APPLE__ -fprofile-instr-generate -fcoverage-mapping \
+  "$output/network-frame.cpp" -o "$output/network-frame-tests"
+LLVM_PROFILE_FILE="$output/network-frame.profraw" "$output/network-frame-tests"
+"${profdata[@]}" merge -sparse "$output/network-frame.profraw" -o "$output/network-frame.profdata"
+"${cov[@]}" show "$output/network-frame-tests" -instr-profile="$output/network-frame.profdata" \
+  -format=html -output-dir="$output/html/network-frame" "$output/network-frame.cpp"

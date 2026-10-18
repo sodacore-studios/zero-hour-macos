@@ -100,3 +100,8 @@ commands did not execute. Investigation found that network frame initialization
 was tied to render-generated messages and could miss frame one during catch-up.
 Frame bookkeeping now advances on every network update. A corrected native
 match, actual command execution and relay-only gameplay are still pending.
+
+The network-frame regression harness compiles the production update functions
+with an empty render-message stream. The previous update fails the active-state
+assertion; the corrected update passes start, delayed start, repeated frame and
+leaving cases. Its coverage is included with the isolated pacing suite.
