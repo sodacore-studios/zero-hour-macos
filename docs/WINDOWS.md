@@ -2,7 +2,7 @@
 
 Development candidate: native x86 client for Windows 10/11 on Intel/AMD PCs.
 Windows ARM and Wine are not verified. The hardware test matrix is recorded in
-`VERIFICATION.md`; source changes and passing unit tests alone do not establish
+`verification.md`; source changes and passing unit tests alone do not establish
 working graphics or a completed Internet match.
 
 ## Installation and use
@@ -14,8 +14,9 @@ Generals folder (containing `INI.big`). Original game archives and the proprieta
 Bink/Miles runtime files are not distributed. Keep the complete legitimate game
 installations available. The launcher does not replace the EA executable.
 
-Choose a resolution, WASD camera control, right-click orders and windowed or
-fullscreen mode before starting. Arrow keys and the mouse wheel remain available.
+Choose a resolution from the dropdown, WASD camera control, right-click orders
+and windowed or fullscreen mode before starting. The list includes standard and
+ultrawide sizes, connected display sizes and a previously saved custom size. Arrow keys and the mouse wheel remain available.
 Middle-button camera controls and command-button hotkey labels use the same
 shared implementation as macOS. Rendering uses Direct3D 8 on Windows; the Metal
 buffer fixes apply only to macOS.

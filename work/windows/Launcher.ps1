@@ -37,8 +37,22 @@ $defaults=@('', '', 'Player', '', '', '', '1920 1080')
 $saved=if(Test-Path $settingsFile){Get-Content $settingsFile -Raw | ConvertFrom-Json}else{$null}
 for($i=0;$i -lt $labels.Count;$i++){
     $label=New-Object Windows.Forms.Label;$label.Text=$labels[$i];$label.SetBounds(15,20+$i*42,190,25);$form.Controls.Add($label)
-    $box=New-Object Windows.Forms.TextBox;$box.SetBounds(210,17+$i*42,425,25);$box.Text=$defaults[$i]
-    if($saved -and $saved.PSObject.Properties[$labels[$i]]){$box.Text=$saved.($labels[$i])}
+    $value=$defaults[$i]
+    if($saved -and $saved.PSObject.Properties[$labels[$i]]){$value=[string]$saved.($labels[$i])}
+    if($labels[$i] -eq 'Resolution'){
+        $box=New-Object Windows.Forms.ComboBox;$box.DropDownStyle='DropDownList';$box.MaxDropDownItems=12
+        $sizes=@('800 600','1024 768','1280 720','1280 800','1280 1024','1366 768','1440 900','1600 900','1920 1080','1920 1200','2560 1080','2560 1440','2560 1600','3440 1440','3840 1600','3840 2160','2560 720','3200 900','3840 1080','5120 1440','5120 2160','6016 3384','7680 2160')
+        foreach($screen in [Windows.Forms.Screen]::AllScreens){$sizes+="$($screen.Bounds.Width) $($screen.Bounds.Height)"}
+        # Preserve a previously saved custom resolution when upgrading the launcher.
+        $value=$value -replace '\s*[xX]\s*',' '
+        if($value -notmatch '^\d{3,4} \d{3,4}$'){$value=$defaults[$i]}
+        $sizes+=$value
+        foreach($size in ($sizes | Select-Object -Unique)){$box.Items.Add(($size -replace ' ',' x ')) | Out-Null}
+        $box.SelectedItem=$value -replace ' ',' x '
+    }else{
+        $box=New-Object Windows.Forms.TextBox;$box.Text=$value
+    }
+    $box.SetBounds(210,17+$i*42,425,25)
     if($i -eq 4){$box.UseSystemPasswordChar=$true}
     $fields[$labels[$i]]=$box;$form.Controls.Add($box)
 }
@@ -59,12 +73,12 @@ $play.Add_Click({
     if(!(Test-Path (Join-Path $zh 'INIZH.big')) -or !(Test-Path (Join-Path $base 'INI.big'))){throw 'Choose the installed Zero Hour and Generals folders.'}
     $endpoint=Get-ServiceEndpoint $fields['Private server (HTTPS)'].Text.Trim()
     $name=$fields['Player name'].Text.Trim();if($name -notmatch '^[\p{L}\p{N} _.-]{2,24}$'){throw 'Player name must contain 2-24 letters, numbers, spaces, periods, hyphens or underscores.'}
-    $resolution=$fields['Resolution'].Text.Trim();if($resolution -notmatch '^(\d{3,4}) (\d{3,4})$' -or [int]$Matches[1] -lt 800 -or [int]$Matches[1] -gt 7680 -or [int]$Matches[2] -lt 600 -or [int]$Matches[2] -gt 4320){throw 'Resolution must be width height, for example 1920 1080 (800x600 to 7680x4320).'}
+    $resolution=$fields['Resolution'].Text.Trim() -replace '\s+x\s+',' ';if($resolution -notmatch '^(\d{3,4}) (\d{3,4})$' -or [int]$Matches[1] -lt 800 -or [int]$Matches[1] -gt 7680 -or [int]$Matches[2] -lt 600 -or [int]$Matches[2] -gt 4320){throw 'Choose a resolution between 800 x 600 and 7680 x 4320.'}
     $relay=$fields['TURN relay (host:port)'].Text.Trim()
     if(!$relay -and $endpoint.StartsWith('https://')){$relay=([Uri]$endpoint).Host+':3478'}
     if($relay){$u=$null;if(![Uri]::TryCreate('turn://'+$relay,[UriKind]::Absolute,[ref]$u) -or !$u.Host -or $u.Port -lt 1 -or $u.Port -gt 65535 -or $u.UserInfo -or $u.Query -or $u.Fragment -or $u.AbsolutePath -notin @('','/') -or $relay -match '[\s\\]'){throw 'Relay must be host:port.'}}
     $settings=@{};foreach($key in $fields.Keys){if($key -ne 'Invitation'){$settings[$key]=$fields[$key].Text}}
-    $settings.WASD=$wasd.Checked;$settings.RightClick=$right.Checked;$settings.Windowed=$windowed.Checked
+    $settings.Resolution=$resolution;$settings.WASD=$wasd.Checked;$settings.RightClick=$right.Checked;$settings.Windowed=$windowed.Checked
     $settings | ConvertTo-Json | Set-Content $settingsFile -Encoding UTF8
     $opts=@{Resolution=$resolution;WASDMapScroll=$(if($wasd.Checked){'yes'}else{'no'});UseAlternateMouse=$(if($right.Checked){'yes'}else{'no'});UseRightMouseScrollWithAlternateMouse='no';ShowHotKeyLabels='yes'}
     Set-GameOptions (Join-Path $profile 'Options.ini') $opts
