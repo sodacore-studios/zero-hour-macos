@@ -90,7 +90,7 @@ jobs:
           path: outputs/windows-delivery/
   required-checks:
     if: always()
-    needs: [core, launcher, server, windows]
+    needs: [core, launcher, server, windows, native]
     runs-on: ubuntu-24.04
     steps:
       - name: Require all deterministic checks
@@ -99,9 +99,10 @@ jobs:
           LAUNCHER: ${{ needs.launcher.result }}
           SERVER: ${{ needs.server.result }}
           WINDOWS: ${{ needs.windows.result }}
-        run: test "$CORE" = success && test "$LAUNCHER" = success && test "$SERVER" = success && test "$WINDOWS" = success
+          NATIVE: ${{ needs.native.result }}
+        run: test "$CORE" = success && test "$LAUNCHER" = success && test "$SERVER" = success && test "$WINDOWS" = success && test "$NATIVE" = success
   native:
-    needs: required-checks
+    needs: [core, launcher, server]
     runs-on: macos-15
     timeout-minutes: 90
     steps:

@@ -870,6 +870,14 @@ void KillAsyncDNSThread()
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
+// The menu teardown uses the public name declared in MainMenuUtils.h.
+void StopAsyncDNSCheck()
+{
+    KillAsyncDNSThread();
+}
+#endif
+
 void StartPatchCheck()
 {
 #if defined(RTS_ZEROHOUR)

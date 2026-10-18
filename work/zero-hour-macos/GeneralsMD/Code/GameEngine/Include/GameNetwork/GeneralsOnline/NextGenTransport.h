@@ -10,7 +10,7 @@
 #include "GameNetwork/GeneralsOnline/Vendor/ValveNetworkingSockets/steam/isteamnetworkingmessages.h"
 
 #pragma comment(lib, "ValveNetworkingSockets/GameNetworkingSockets.lib")
-#pragma comment(lib, "ValveNetworkingSockets/abseil_dll.lib")
+// Abseil is a runtime dependency of GameNetworkingSockets.dll.
 #pragma comment(lib, "ValveNetworkingSockets/libcrypto.lib")
 #pragma comment(lib, "ValveNetworkingSockets/libprotobuf.lib")
 #pragma comment(lib, "ValveNetworkingSockets/libssl.lib")

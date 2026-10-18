@@ -310,6 +310,7 @@ function(SetupGitMonitoring)
         BYPRODUCTS
             ${GIT_POST_CONFIGURE_FILE}
             ${GIT_STATE_FILE}
+        VERBATIM
         COMMENT "Checking the git repository for changes..."
         COMMAND
             ${CMAKE_COMMAND}

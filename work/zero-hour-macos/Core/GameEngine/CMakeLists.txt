@@ -1151,6 +1151,10 @@ set(GAMEENGINE_SRC
 #    Source/Precompiled/PreRTS.cpp
 )
 
+if(WIN32)
+    list(APPEND GAMEENGINE_SRC Source/GameNetwork/WOLBrowser/WebBrowser.cpp)
+endif()
+
 if(RTS_GAMEMEMORY_ENABLE)
     # Uses the original Game Memory implementation.
     list(APPEND GAMEENGINE_SRC
