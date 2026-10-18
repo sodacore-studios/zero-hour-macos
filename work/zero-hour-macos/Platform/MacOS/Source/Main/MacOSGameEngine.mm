@@ -1,3 +1,4 @@
+#include "InputEventBudget.h"
 // MacOSGameEngine.mm — macOS game engine following Win32GameEngine structure
 //
 // 10 of 12 factory methods are identical to Win32GameEngine.
@@ -442,7 +443,10 @@ void MacOSGameEngine::serviceWindowsOS()
 {
 	@autoreleasepool {
 		NSEvent* event;
-		while ((event = [NSApp nextEventMatchingMask:NSEventMaskAny
+        // Always yield back to rendering, even while a fast mouse keeps filling
+        // the AppKit queue. Events left over remain queued in their original order.
+        InputEventBudget eventBudget(timeGetTime());
+		while (eventBudget.take(timeGetTime()) && (event = [NSApp nextEventMatchingMask:NSEventMaskAny
 		                                  untilDate:[NSDate distantPast]
 		                                     inMode:NSDefaultRunLoopMode
 		                                    dequeue:YES])) {
@@ -558,9 +562,10 @@ void MacOSGameEngine::serviceWindowsOS()
 			
 			if (type != NSEventTypeKeyDown && type != NSEventTypeKeyUp)
                 [NSApp sendEvent:event];
-			[NSApp updateWindows];
+
 		}
 
+		[NSApp updateWindows];
 		TheMessageTime = 0;
         
 		[CATransaction flush];

@@ -7,6 +7,8 @@ cmake --preset macos -S work/zero-hour-macos -DCMAKE_OSX_ARCHITECTURES=arm64 -DC
 cmake --build work/zero-hour-macos/build/macos --target GeneralsOnlineZH --parallel 3
 bash work/performance-tests/run.sh /tmp/pacing-coverage
 bash work/update-tests/run.sh /tmp/updater-coverage
+bash work/renderer-tests/run-buffers.sh /tmp/renderer-coverage
+bash work/input-tests/run.sh /tmp/input-coverage
 python3 work/release/package.py --version 0.3.0 --key /private/path/to/update-signing.key
 ```
 
@@ -14,7 +16,7 @@ The package script compiles the launcher/helper, bundles the native engine and d
 
 ## GitHub Actions
 
-`Build and release` runs deterministic simulation/terrain tests on Linux and launcher/updater tests on macOS for pushes and pull requests. Coverage HTML is uploaded as artifacts. `required-checks` aggregates both suites. Native builds depend on that aggregate. Main builds increment the 0.3 release line, package/sign, and publish a version tag and downloadable artifacts only after successful tests and build. Release notes come from `docs/RELEASE_NOTES.md` and must be maintained when behavior changes.
+`Build and release` runs deterministic simulation/terrain tests on Linux and launcher/updater and deterministic renderer-buffer tests on macOS for pushes and pull requests. Coverage HTML is uploaded as artifacts. `required-checks` aggregates both suites. Native builds depend on that aggregate. Main builds increment the 0.3 release line, package/sign, and publish a version tag and downloadable artifacts only after successful tests and build. Release notes come from `docs/RELEASE_NOTES.md` and must be maintained when behavior changes.
 
 The previous private repository could not enable branch protection under its plan. For public delivery, configure main to require `required-checks` and restrict updates to reviewed, passing changes. Release jobs always depend on the aggregate tests and successful native build, independently of repository protection. Actual branch-protection state is verified during publication.
 

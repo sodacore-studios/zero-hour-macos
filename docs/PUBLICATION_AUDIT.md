@@ -9,3 +9,19 @@ The current source tree and all reachable blobs in the pre-existing Git history 
 - The update private key is held outside the checkout. Only its public key is tracked. GitHub Actions uses a separately authorized encrypted repository secret.
 
 This is a bounded source/history audit, not a guarantee that upstream third-party code contains no vulnerabilities. Existing upstream copyrights and contributor metadata are retained. The original history is excluded from the public repository and preserved in a recoverable private archive. No other authors' history is rewritten.
+
+## Graphics and mouse-control release follow-up
+
+Before publication on 2026-10-21, the current tracked/proposed source set (5,015
+files) and all 4,890 reachable Git blobs were rescanned for the known operator
+addresses, current invitation value, local account path, GitHub/AWS credential
+patterns and complete private-key blocks. No such private value or key was found.
+The RFC1918 address matches were reviewed: they are upstream API examples, network
+classification ranges and vendor sample registry comments, not deployment data.
+The four environment/configuration filename matches contain placeholders or
+localhost development endpoints. Game archives, live settings, signing keys, build
+outputs and test profiles remain excluded. No history cleanup was needed.
+
+The code file hashes match the user-accepted second local graphics candidate;
+subsequent changes only finalize documentation. CI independently rebuilds the
+release and validates its distributable artifacts.

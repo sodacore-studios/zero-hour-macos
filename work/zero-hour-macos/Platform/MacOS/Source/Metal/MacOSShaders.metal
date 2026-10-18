@@ -1015,11 +1015,18 @@ fragment float4 fragment_main(FragmentIn stageIn [[stage_in]],
     float3 uv2 = computeTexCoord(uniforms, in, fragUniforms.texCoordIndex[2], 2);
     float3 uv3 = computeTexCoord(uniforms, in, fragUniforms.texCoordIndex[3], 3);
     
-    // Sample textures using their respective UV coordinates.
-    // If projective coordinates were truncated (tc.z < 0), DX8 hardware would have clipped this geometry.
-    // Emulate geometry clipping by completely discarding the fragment, preventing it from applying base diffuse logic.
-    if (uv0.z < 0.0f || uv1.z < 0.0f || uv2.z < 0.0f || uv3.z < 0.0f) {
-        discard_fragment();
+    // A disabled D3D texture stage terminates the fixed-function cascade.
+    // Its texgen/projector state may still belong to an earlier terrain or
+    // shadow draw and must not clip subsequent untextured UI geometry.
+    float projectedClip[4] = {uv0.z, uv1.z, uv2.z, uv3.z};
+    for (uint stage = 0; stage < 4; ++stage) {
+        uint colorOp = fragUniforms.stages[stage].colorOp;
+        if (colorOp == 0 || colorOp == D3DTOP_DISABLE) break;
+        if (fragUniforms.hasTexture[stage] != 0 &&
+            (uniforms.texTransformFlags[stage] & 256) != 0 &&
+            projectedClip[stage] < 0.0f) {
+            discard_fragment();
+        }
     }
     
     float4 texColor0 = (fragUniforms.hasTexture[0] == 2) ? texCube0.sample(sampler0, uv0) :

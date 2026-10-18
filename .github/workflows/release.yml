@@ -17,6 +17,12 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y clang llvm
       - run: bash work/performance-tests/run.sh "$RUNNER_TEMP/coverage"
+      - name: Input event fairness regression tests
+        run: bash work/input-tests/run.sh "$RUNNER_TEMP/input-tests"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: input-coverage
+          path: ${{ runner.temp }}/input-tests/html
       - name: Terrain regression tests
         run: |
           c++ -std=c++17 -Iwork/terrain-tests -Iwork/zero-hour-macos/Core/GameEngineDevice/Include/W3DDevice/GameClient work/terrain-tests/coverage.cpp -o "$RUNNER_TEMP/terrain-tests"
@@ -30,6 +36,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash work/update-tests/run.sh "$RUNNER_TEMP/update-tests"
+      - name: Renderer buffer lifetime regression tests
+        run: bash work/renderer-tests/run-buffers.sh "$RUNNER_TEMP/renderer-tests"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: renderer-coverage
+          path: ${{ runner.temp }}/renderer-tests/html
       - uses: actions/upload-artifact@v4
         with:
           name: updater-coverage

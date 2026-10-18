@@ -5,6 +5,7 @@ import Cocoa
     let folder = NSTextField(), server = NSTextField(), player = NSTextField(), relay = NSTextField()
     let invitation = NSSecureTextField()
     let wasd = NSButton(checkboxWithTitle: "Use WASD camera controls", target: nil, action: nil)
+    let rightClickOrders = NSButton(checkboxWithTitle: "Left-click selects; right-click moves / attacks", target: nil, action: nil)
     let fullscreen = NSButton(checkboxWithTitle: "Start in fullscreen", target: nil, action: nil)
     let resolution = NSPopUpButton()
     let status = NSTextField(wrappingLabelWithString: "")
@@ -39,7 +40,7 @@ import Cocoa
             do { settings = try JSONDecoder().decode(LaunchSettings.self, from: Data(contentsOf: configURL)) }
             catch { status.stringValue = "Saved settings could not be read. Please select them again." }
         }
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 695), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 730), styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
         window.title = "Zero Hour – Launch and settings"
         window.delegate = self
         window.isReleasedWhenClosed = false
@@ -68,7 +69,7 @@ import Cocoa
         status.font = .systemFont(ofSize: 12); status.textColor = .secondaryLabelColor
         status.heightAnchor.constraint(greaterThanOrEqualToConstant: 34).isActive = true
         let stack = NSStackView(views: [title, subtitle, label(bundledGameRoot == nil ? "Game files from your installation" : "Game files included – ready to play"), folderRow,
-            label("Resolution and display"), graphics, wasd, controls,
+            label("Resolution and display"), graphics, wasd, rightClickOrders, controls,
             label("Server address"), server, network,
             label("Player name and invitation code"), horizontal(player, invitation),
             label("Relay address (optional)"), relay, actions, status])
@@ -120,6 +121,7 @@ import Cocoa
         folder.stringValue=settings.gameFolder;server.stringValue=settings.server;player.stringValue=settings.playerName
         invitation.stringValue=settings.invitation;relay.stringValue=settings.relay
         wasd.state=settings.wasd ? .on : .off;fullscreen.state=settings.fullscreen ? .on : .off
+        rightClickOrders.state=settings.usesRightClickOrders ? .on : .off
         resolution.selectItem(withTitle: settings.resolution)
     }
     func readSettings() throws {
@@ -127,6 +129,7 @@ import Cocoa
         settings.playerName=player.stringValue.trimmingCharacters(in:.whitespacesAndNewlines)
         settings.invitation=invitation.stringValue.trimmingCharacters(in:.whitespacesAndNewlines);settings.relay=relay.stringValue
         settings.wasd=wasd.state == .on;settings.fullscreen=fullscreen.state == .on
+        settings.rightClickOrders=rightClickOrders.state == .on
         settings.resolution=resolution.titleOfSelectedItem ?? "1920 x 1080"
         try settings.validate()
     }
@@ -150,7 +153,7 @@ import Cocoa
             try readSettings();let root=try settings.gameRoot(bundledRoot: bundledGameRoot);try persist()
             try fm.createDirectory(at:optionsURL.deletingLastPathComponent(),withIntermediateDirectories:true)
             let previous=(try? String(contentsOf:optionsURL,encoding:.utf8)) ?? ""
-            let updated=updateOptions(previous,values:["Resolution":settings.resolution.replacingOccurrences(of:" x ",with:" "),"WASDMapScroll":settings.wasd ? "yes":"no","Windowed":"yes"])
+            let updated=updateOptions(previous,values:settings.gameOptions())
             try updated.write(to:optionsURL,atomically:true,encoding:.utf8)
             let process=Process()
             process.executableURL=Bundle.main.resourceURL!.appendingPathComponent("Engine.app/Contents/MacOS/GeneralsOnlineZH")
