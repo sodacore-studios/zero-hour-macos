@@ -1246,6 +1246,12 @@ target_link_libraries(z_gameengine PUBLIC
     z_wwvegas
 )
 
+if(WIN32)
+    target_sources(z_gameengine PRIVATE ../../../Platform/Windows/SentryStubs.cpp)
+    target_compile_definitions(z_gameengine PUBLIC CURL_STATICLIB SENTRY_BUILD_STATIC)
+    target_link_libraries(z_gameengine PUBLIC libcurl GameNetworkingSockets_s)
+endif()
+
 if(APPLE)
     target_sources(z_gameengine PRIVATE
         ../../../Core/GameEngine/Source/Common/CRCDebug.cpp

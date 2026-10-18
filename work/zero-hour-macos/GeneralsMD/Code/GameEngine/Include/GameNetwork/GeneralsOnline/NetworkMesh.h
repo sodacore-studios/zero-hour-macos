@@ -5,7 +5,7 @@
 #include <ws2ipdef.h>
 #endif
 #include <mutex>
-#include "ValveNetworkingSockets/steam/steamnetworkingcustomsignaling.h"
+#include <steam/steamnetworkingcustomsignaling.h>
 #include "PluginInterfaces.h"
 
 class NetRoom_ChatMessagePacket;

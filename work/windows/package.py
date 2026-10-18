@@ -11,9 +11,8 @@ if stage.exists(): raise SystemExit('Use a fresh staging directory')
 bin=stage/'Zero Hour/bin';bin.mkdir(parents=True);out.mkdir(parents=True,exist_ok=True)
 shutil.copy2(engine,bin/engine.name)
 vendor=source/'GeneralsMD/Code/GameEngine/Source/GameNetwork/GeneralsOnline/Vendor'
-# OpenSSL 3.5.1 from GNS supplies the shared OpenSSL 3 ABI for both libraries.
-files=['ValveNetworkingSockets/GameNetworkingSockets.dll','ValveNetworkingSockets/abseil_dll.dll','ValveNetworkingSockets/libprotobuf.dll','ValveNetworkingSockets/libssl-3.dll','ValveNetworkingSockets/libcrypto-3.dll','libcurl/libcurl.dll','libcurl/zlib1.dll','DiscordRPC/discord-rpc.dll']
-for name in files: shutil.copy2(vendor/name,bin/Path(name).name)
+# Network and TLS libraries are built from source and linked statically.
+shutil.copy2(vendor/'DiscordRPC/discord-rpc.dll',bin/'discord-rpc.dll')
 # App-local Microsoft C++ runtime, obtained from the installed build tools.
 vswhere=Path('C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe')
 vs=Path(subprocess.check_output([str(vswhere),'-latest','-products','*','-requires','Microsoft.VisualStudio.Component.VC.Tools.x86.x64','-property','installationPath'],text=True).strip())
@@ -23,9 +22,24 @@ for dll in crts[-1].glob('*.dll'):shutil.copy2(dll,bin/dll.name)
 for dll in bin.iterdir():
  b=dll.read_bytes();pe=struct.unpack_from('<I',b,60)[0]
  if b[pe:pe+4]!=b'PE\0\0' or struct.unpack_from('<H',b,pe+4)[0]!=0x14c:raise SystemExit(f'Not x86 PE: {dll.name}')
+# Reject debug runtimes and undeclared non-system dependencies before publishing.
+import re
+vc_tools=sorted((vs/'VC/Tools/MSVC').glob('*/bin/Hostx64/x86/dumpbin.exe'))
+if not vc_tools:raise SystemExit('dumpbin is required for dependency validation')
+allowed=set('kernel32 user32 gdi32 shell32 ole32 oleaut32 advapi32 ws2_32 winmm iphlpapi secur32 winhttp crypt32 wininet dinput8 imm32 avifil32 comdlg32 comctl32 version shlwapi bcrypt ncrypt normaliz wldap32 setupapi userenv dbghelp rpcrt4 psapi uxtheme d3d8 dxgi cryptnet dnsapi powrprof wintrust'.split())
+packaged={f.name.lower() for f in bin.iterdir()}
+for binary in bin.iterdir():
+ imports=subprocess.check_output([str(vc_tools[-1]),'/dependents',str(binary)],text=True)
+ for dependency in re.findall(r'^\s+([\w.-]+\.dll)\s*$',imports,re.M|re.I):
+  lower=dependency.lower()
+  if lower.endswith(('140d.dll','based.dll')):raise SystemExit(f'Debug runtime in {binary.name}: {dependency}')
+  if lower not in packaged and lower not in ('binkw32.dll','mss32.dll') and not lower.startswith(('api-ms-win-','ext-ms-win-')) and lower[:-4] not in allowed:
+   raise SystemExit(f'Unpackaged dependency in {binary.name}: {dependency}')
 for name in ['Start-ZeroHour.cmd','Launcher.ps1']:shutil.copy2(root/'work/windows'/name,stage/'Zero Hour'/name)
 shutil.copy2(root/'docs/WINDOWS.md',stage/'Zero Hour/READ ME.txt')
 licenses=stage/'Zero Hour/Licenses';licenses.mkdir()
+for notice in (root/'work/windows/licenses').iterdir():
+ if notice.is_file():shutil.copy2(notice,licenses/notice.name)
 shutil.copy2(source/'LICENSE.md',licenses/'GameClient-GPL-3.md')
 shutil.copy2(vendor/'DiscordRPC/LICENSE.txt',licenses/'DiscordRPC.txt')
 for dep in (build/'_deps').glob('*-src'):

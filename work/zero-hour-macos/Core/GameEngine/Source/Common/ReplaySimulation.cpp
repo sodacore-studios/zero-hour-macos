@@ -106,6 +106,12 @@ int ReplaySimulation::simulateReplaysInThisProcess(const std::vector<AsciiString
 				}
 				TheGameLogic->UPDATE();
 #if defined(RTS_ZEROHOUR)
+                if (getenv("ZERO_HOUR_PERF_CRC") && TheGameLogic->getFrame() % 600 == 0) {
+                    printf("[PERF_CRC] frame=%u crc=%u\n", TheGameLogic->getFrame(), TheGameLogic->getCRC(CRC_RECALC));
+                    fflush(stdout);
+                }
+#endif
+#if defined(RTS_ZEROHOUR)
 				if (TheGlobalData->m_exportStats)
 					StatsExporterCollectSnapshot();
 #endif

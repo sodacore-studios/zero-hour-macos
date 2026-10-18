@@ -47,7 +47,8 @@ uses manual package updates and is not Authenticode-signed.
 ## Building and troubleshooting
 
 Install Visual Studio 2022 Build Tools with MSVC x86/x64, Windows SDK, ATL and
-CMake components. Run `powershell -File work/windows/Build.ps1` from the checkout.
+CMake components, plus Strawberry Perl for OpenSSL. Networking dependencies are
+built from pinned source revisions with Release runtimes. Run `powershell -File work/windows/Build.ps1` from the checkout.
 Builds target x86 to match the supplied networking and original media runtimes.
 A missing `mss32.dll` or `binkw32.dll` means the selected original installation is
 incomplete. Check the profile logs after a start failure. Do not disable TLS or

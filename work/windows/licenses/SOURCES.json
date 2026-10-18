@@ -1,0 +1,58 @@
+{
+  "GameNetworkingSockets.txt": {
+    "source": "https://raw.githubusercontent.com/ValveSoftware/GameNetworkingSockets/v1.4.1/LICENSE",
+    "sha256": "6fedd796d51d7f996e0b3dc7c1c9f6a67603bec7a2cfb9f418e0c6607a1ca647"
+  },
+  "OpenSSL.txt": {
+    "source": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.1/LICENSE.txt",
+    "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+  },
+  "curl.txt": {
+    "source": "https://raw.githubusercontent.com/curl/curl/curl-8_6_0/COPYING",
+    "sha256": "adb1fc06547fd136244179809f7b7c2d2ae6c4534f160aa513af9b6a12866a32"
+  },
+  "protobuf.txt": {
+    "source": "https://raw.githubusercontent.com/protocolbuffers/protobuf/v29.3/LICENSE",
+    "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d"
+  },
+  "abseil.txt": {
+    "source": "https://raw.githubusercontent.com/abseil/abseil-cpp/20250127.0/LICENSE",
+    "sha256": "c79a7fea0e3cac04cd43f20e7b648e5a0ff8fa5344e644b0ee09ca1162b62747"
+  },
+  "zlib.txt": {
+    "source": "https://raw.githubusercontent.com/madler/zlib/v1.3.1/LICENSE",
+    "sha256": "845efc77857d485d91fb3e0b884aaa929368c717ae8186b66fe1ed2495753243"
+  },
+  "libsodium.txt": {
+    "source": "https://raw.githubusercontent.com/jedisct1/libsodium/1.0.20-RELEASE/LICENSE",
+    "sha256": "43964d976a6db3fb986af689d05f8ca0e9971878bccae709750dac8fdc4a99cf"
+  },
+  "sentry.txt": {
+    "source": "https://raw.githubusercontent.com/getsentry/sentry-native/0.9.0/LICENSE",
+    "sha256": "5ef07a3d95f1f779c1597c0fbaecbb7ba242128ff0587ed1e3214c7ac6154523"
+  },
+  "libnatpmp.txt": {
+    "source": "https://raw.githubusercontent.com/miniupnp/libnatpmp/master/LICENSE",
+    "sha256": "7184f1e2114b518440962e7de67f0b9d5faa3789ba1f1a7ff33159bd26834b06"
+  },
+  "miniupnpc.txt": {
+    "source": "https://raw.githubusercontent.com/miniupnp/miniupnp/master/LICENSE",
+    "sha256": "ae63874b77b3d9c58ab99b2d116d83dca5f8c79d3f7d16d6bf7c23068f640fb5"
+  },
+  "libplum.txt": {
+    "source": "https://raw.githubusercontent.com/paullouisageneau/libplum/master/LICENSE",
+    "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+  },
+  "WebRTC-LICENSE.txt": {
+    "source": "https://webrtc.googlesource.com/src/+/30a3e787948dd6cdd541773101d664b85eb332a6/LICENSE",
+    "sha256": "ab00a482b6a3902e40211b43c5d0441962ea99b6cc7c25c0f243fa270b78d482"
+  },
+  "WebRTC-rtc_base-third_party-base64-LICENSE.txt": {
+    "source": "https://webrtc.googlesource.com/src/+/30a3e787948dd6cdd541773101d664b85eb332a6/rtc_base/third_party/base64/LICENSE",
+    "sha256": "a508773ebf00f8c777a910e941e5fd0072195843e1b72a90eb8787d26d4ab1d7"
+  },
+  "WebRTC-rtc_base-third_party-sigslot-LICENSE.txt": {
+    "source": "https://webrtc.googlesource.com/src/+/30a3e787948dd6cdd541773101d664b85eb332a6/rtc_base/third_party/sigslot/LICENSE",
+    "sha256": "905bc5ab1c66eea2669aee6cb5185488508264df6492f71ae1a6595180ff8c2b"
+  }
+}

@@ -161,12 +161,14 @@ if(METAL_CHECK_RESULT EQUAL 0)
     set(METAL_AIR_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/MacOSShaders.air)
     set(METAL_BUNDLE_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/default.metallib)
     add_custom_command(
+        VERBATIM
         OUTPUT ${METAL_AIR_OUTPUT}
         COMMAND xcrun -sdk macosx metal -std=metal3.0 -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -c ${METAL_SHADER_SOURCE} -o ${METAL_AIR_OUTPUT}
         DEPENDS ${METAL_SHADER_SOURCE}
         COMMENT "Compiling Metal shaders"
     )
     add_custom_command(
+        VERBATIM
         OUTPUT ${METAL_BUNDLE_RESOURCE}
         COMMAND xcrun -sdk macosx metallib ${METAL_AIR_OUTPUT} -o ${METAL_BUNDLE_RESOURCE}
         DEPENDS ${METAL_AIR_OUTPUT}
@@ -176,6 +178,7 @@ else()
     message(STATUS "Offline Metal compiler unavailable; bundle shader source for runtime compilation")
     set(METAL_BUNDLE_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/MacOSShaders.metal)
     add_custom_command(
+        VERBATIM
         OUTPUT ${METAL_BUNDLE_RESOURCE}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${METAL_SHADER_SOURCE} ${METAL_BUNDLE_RESOURCE}
         DEPENDS ${METAL_SHADER_SOURCE}

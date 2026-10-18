@@ -14,11 +14,11 @@
 #include "../json.hpp"
 #include "../HTTP/HTTPManager.h"
 #include "../OnlineServices_Init.h"
-#include "ValveNetworkingSockets/steam/isteamnetworkingutils.h"
-#include "ValveNetworkingSockets/steam/steamnetworkingcustomsignaling.h"
+#include <steam/isteamnetworkingutils.h>
+#include <steam/steamnetworkingcustomsignaling.h>
 #include "../PluginInterfaces.h"
-#include "ValveNetworkingSockets/steam/isteamnetworkingsockets.h"
-#include "ValveNetworkingSockets/steam/steamnetworkingsockets.h"
+#include <steam/isteamnetworkingsockets.h>
+#include <steam/steamnetworkingsockets.h>
 
 bool g_bForceRelay = false;
 UnsignedInt m_exeCRCOriginal = 0;
