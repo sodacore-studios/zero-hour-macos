@@ -1073,6 +1073,14 @@ GlobalData::GlobalData()
 
 	m_keyboardCameraRotateSpeed = 0.1f;
 
+#if defined(_WIN32)
+    const char* portableRoot = getenv("GENERALS_USER_DATA_ROOT");
+    if (portableRoot && *portableRoot) {
+        m_userDataDir = BuildUserDataPathFromRegistry();
+        CreateDirectory(m_userDataDir.str(), nullptr);
+    } else
+#endif
+    {
 #if defined(USE_MAULLER_ONEDRIVE_FIX)
 	// Set user data directory based on registry settings instead of INI parameters.
 	// This allows us to localize the leaf name.
@@ -1107,6 +1115,7 @@ GlobalData::GlobalData()
     }
 
 #endif
+    }
 
 	//-allAdvice feature
 	//m_allAdvice = FALSE;

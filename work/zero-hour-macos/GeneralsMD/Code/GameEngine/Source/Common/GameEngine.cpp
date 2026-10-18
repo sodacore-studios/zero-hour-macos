@@ -234,8 +234,11 @@ void initSubsystem(
 	const char* path1 = nullptr,
 	const char* path2 = nullptr)
 {
+    const bool trace = getenv("ZERO_HOUR_STARTUP_TRACE") != nullptr;
+    if (trace) { printf("[STARTUP] Initializing %s\n", name.str()); fflush(stdout); }
 	sysref = sys;
 	TheSubsystemList->initSubsystem(sys, path1, path2, pXfer, name);
+    if (trace) { printf("[STARTUP] Ready %s\n", name.str()); fflush(stdout); }
 }
 
 //-------------------------------------------------------------------------------------------------
