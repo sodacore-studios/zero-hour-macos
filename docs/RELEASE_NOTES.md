@@ -1,4 +1,4 @@
-## Windows and private cross-platform multiplayer candidate
+## Windows and private cross-platform multiplayer
 
 - Extend the shared camera, WASD, right-click order, selection and fixed-step
   pacing improvements to the native Windows x86 build.
@@ -15,8 +15,8 @@ Native Windows gameplay and a controlled Mac-host/Windows-guest match through a
 forced public TURN relay passed: construction, movement, surrender and matching
 result screens, with 12,655 identical CRC comparisons. Both devices used the same
 Internet access network. A full 28:35 replay also matched all 1,716 checkpoints.
-See `VERIFICATION.md` for exact scope and remaining limits. The production service
-is unchanged and must admit the release binaries before online use. Windows
+See `VERIFICATION.md` for exact scope and remaining limits. Private services
+must admit the release binaries before online use. Windows
 updates are manual; fullscreen modes depend on graphics-adapter support.
 
 ## Graphics and mouse controls

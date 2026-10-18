@@ -51,7 +51,7 @@ For client releases, coordinate the same binary on every Mac and set its CRC in 
 
 ## Multiple native client builds
 
-The Windows development branch adds `PrivateService:AcceptedClients`, a JSON
+The service supports `PrivateService:AcceptedClients`, a JSON
 object mapping each accepted executable CRC32 (decimal key) to a nonzero shared
 simulation CRC32 (decimal value). Only group builds after deterministic replay
 and real match verification. Binary admission remains mandatory and unknown

@@ -1,6 +1,6 @@
 # Windows client
 
-Development candidate: native x86 client for Windows 10/11 on Intel/AMD PCs.
+Native x86 client for Windows 10/11 on Intel/AMD PCs.
 Windows ARM and Wine are not verified. The hardware test matrix is recorded in
 `VERIFICATION.md`; source changes and passing unit tests alone do not establish
 working graphics or a completed Internet match.
@@ -45,7 +45,7 @@ when no explicit mapping is configured. Publication does not deploy the server.
 Download the latest Windows package from the project's GitHub Releases page.
 Close the game, extract the new version into a separate folder, and start it.
 Keep the previous folder for rollback; user settings live outside either package.
-The macOS signed automatic updater is platform-specific. This Windows candidate
+The macOS signed automatic updater is platform-specific. The Windows launcher
 uses manual package updates and is not Authenticode-signed.
 
 ## Building and troubleshooting
