@@ -337,7 +337,7 @@ void NGMPGame::startGame(Int gameID)
 	DEBUG_INFO_MAC(("[START_GAME] startGame() called. m_inProgress=%d m_inGame=%d", m_inProgress, m_inGame));
 	for (Int si = 0; si < MAX_SLOTS; ++si)
 	{
-		const NGMPGameSlot* ss = getGameSpySlot(si);
+		[[maybe_unused]] const NGMPGameSlot* ss = getGameSpySlot(si);
 		DEBUG_INFO_MAC(("[START_GAME] slot[%d]: isHuman=%d hasMap=%d state=%d", si, ss->isHuman(), ss->hasMap(), (int)ss->getState()));
 	}
 	//DEBUG_ASSERTCRASH(m_transport == NULL, ("m_transport is not NULL when it should be"));

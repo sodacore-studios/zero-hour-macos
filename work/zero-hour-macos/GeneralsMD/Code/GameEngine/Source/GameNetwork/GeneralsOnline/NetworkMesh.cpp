@@ -280,7 +280,7 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 				{
 					DEBUG_INFO_MAC(("[P2P] ACCEPTING incoming connection from '%s'", pInfo->m_info.m_szConnectionDescription));
 					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Accepting - Player is in lobby\n", pInfo->m_info.m_szConnectionDescription);
-					EResult acceptResult = SteamNetworkingSockets()->AcceptConnection(pInfo->m_hConn);
+					[[maybe_unused]] EResult acceptResult = SteamNetworkingSockets()->AcceptConnection(pInfo->m_hConn);
 					DEBUG_INFO_MAC(("[P2P] AcceptConnection result=%d", (int)acceptResult));
 				}
 				else
@@ -619,7 +619,7 @@ public:
 					// To process this call, SteamnetworkingSockets will need take its own internal lock.
 					// That lock may be held by another thread that is asking you to send a signal!  So
 					// be warned that deadlocks are a possibility here.
-					bool bSignalResult = m_pSteamNetworkingSockets->ReceivedP2PCustomSignal(signalData.data(), (int)signalData.size(), &context);
+					[[maybe_unused]] bool bSignalResult = m_pSteamNetworkingSockets->ReceivedP2PCustomSignal(signalData.data(), (int)signalData.size(), &context);
 					DEBUG_INFO_MAC(("[P2P] ReceivedP2PCustomSignal result=%d", bSignalResult));
 				}
 			}
@@ -1594,7 +1594,7 @@ std::string PlayerConnection::GetConnectionType()
 	if (m_hSteamConnection == k_HSteamNetConnection_Invalid)
 		return "(disconnected)";
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	SteamNetConnectionInfo_t info;
 	if (SteamNetworkingSockets()->GetConnectionInfo(m_hSteamConnection, &info))
 	{

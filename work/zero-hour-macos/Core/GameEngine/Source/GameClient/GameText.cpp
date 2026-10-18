@@ -456,7 +456,7 @@ static void adoptModWording( const AsciiString &localizedCsfFile, const std::vec
 		if ( table.spec.source != TEXT_FILE_INSTALL || !isLocalizedTable( table, localizedCsfFile ) )
 			continue;
 
-		const Int adopted = adoptModWordingInto( table, tables, localizedCsfFile );
+		[[maybe_unused]] const Int adopted = adoptModWordingInto( table, tables, localizedCsfFile );
 		DEBUG_LOG(("GameTextManager - %d of %d strings in %s take the mod's English wording", adopted, table.count, table.spec.filename.str()));
 	}
 }
