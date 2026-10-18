@@ -99,6 +99,21 @@ endif()
 
 add_subdirectory(resources)
 
+# Every native client must compile the same simulation and serialization rules.
+# In particular, mixing retail and modern pathfinding allocation diverges as
+# soon as the first path request is processed, despite identical initial states.
+if(APPLE OR WIN32)
+    add_compile_definitions(
+        RETAIL_COMPATIBLE_NETWORKING=0
+        RETAIL_COMPATIBLE_CRC=0
+        RETAIL_COMPATIBLE_XFER_SAVE=1
+        RETAIL_COMPATIBLE_PATHFINDING=1
+        RETAIL_COMPATIBLE_PATHFINDING_ALLOCATION=1
+        RETAIL_COMPATIBLE_AIGROUP=1
+        RETAIL_COMPATIBLE_CIRCLE_FILL_ALGORITHM=1
+    )
+endif()
+
 if(APPLE)
     add_subdirectory(Platform/MacOS)
 endif()

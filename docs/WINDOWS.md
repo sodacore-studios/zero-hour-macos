@@ -2,7 +2,7 @@
 
 Development candidate: native x86 client for Windows 10/11 on Intel/AMD PCs.
 Windows ARM and Wine are not verified. The hardware test matrix is recorded in
-`verification.md`; source changes and passing unit tests alone do not establish
+`VERIFICATION.md`; source changes and passing unit tests alone do not establish
 working graphics or a completed Internet match.
 
 ## Installation and use

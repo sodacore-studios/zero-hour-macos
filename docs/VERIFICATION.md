@@ -59,7 +59,9 @@ binary. The live server keeps its existing accepted checksum until coordinated.
   Hardware startup then exposed upstream DLLs requiring debug CRT files and a
   missing Sentry runtime. That package is not a verified playable release. The
   replacement builds networking from pinned source with Release runtimes and
-  checks the package dependency closure before upload.
+  checks the package dependency closure before upload. The replacement package
+  passed all aggregate checks in run 39622544361 and opened a native Direct3D 8
+  skirmish on the Windows test device.
 - An isolated staging service on the existing test server passed invitation
   rejection, two authenticated WebSocket sessions, protected lobby create/join,
   wrong-password rejection and TURN credential issuance. A public TURN probe
@@ -69,11 +71,24 @@ binary. The live server keeps its existing accepted checksum until coordinated.
   access networks. The live service has not been changed.
 - The local macOS candidate completed the full 28:35 replay in 01:33, exit zero,
   emitting 172 simulation CRC checkpoints through frame 102,600. Corresponding
-  Windows gameplay checksums, graphics, input, audio and a complete Mac-to-Windows
-  match are still pending. The original INIZH, MapsZH and GensecZH archive hashes
-  match on both test machines.
+  Windows gameplay checksums, audio and a complete Mac-to-Windows match are still
+  pending. The Windows replay needs the interactive desktop: the SSH session
+  failed in audio initialization, while an interactive run reached simulation
+  and reported a mismatch against the recorded CRC at frame 239. A matching
+  cross-platform replay is not yet verified. Dense comparison subsequently
+  found identical checkpoints through frame 239 and a byte-identical 1,991,709-byte
+  state dump at frame 60. The first frame-240 difference was one pathfinder
+  allocation counter. macOS-only build definitions had selected different
+  pathfinding behavior; these definitions are now shared and retesting is pending.
+  The original INIZH, MapsZH and GensecZH archive hashes match on both test machines.
 - The Windows launcher was opened on the test desktop through RustDesk. It
   detected both EA game folders and rejected an empty player name. Its process
   exit reporting also reproduced the missing-DLL startup failure above.
+- The Windows resolution dropdown was opened and used through RustDesk. Selecting
+  1280 x 800 wrote `Resolution = 1280 800` and opened an actual 1280 x 800 game
+  viewport. A skirmish rendered, WASD moved the camera in both directions, left
+  click selected a construction dozer, and a short right click moved it to the
+  selected ground location. Command hotkey labels were visible. These checks do
+  not establish every resolution, GPU, audio device or a complete online game.
 - The Windows launcher currently uses manual updates; macOS retains its signed
   automatic updater. Windows ARM and Windows 11 hardware have not been tested.
