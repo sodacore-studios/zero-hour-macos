@@ -105,3 +105,16 @@ The network-frame regression harness compiles the production update functions
 with an empty render-message stream. The previous update fails the active-state
 assertion; the corrected update passes start, delayed start, repeated frame and
 leaving cases. Its coverage is included with the isolated pacing suite.
+
+A subsequent forced-relay attempt exposed an incoming-connection registration
+race: the receiving client searched only for an already registered outgoing
+handle and never accepted a first incoming connection. Incoming peers are now
+resolved against the current authenticated lobby roster before transport
+registration. The isolated test compiles this production acceptance method and
+covers a first incoming peer, missing lobby/authentication, non-members, malformed
+identities, self-connections, duplicate handles and transport acceptance failure.
+The corrected Windows client then accepted the Mac and both native logs confirmed
+an ICE route via TURN. Match launch exposed a second startup boundary: the shell
+already has a nonzero frame when the network object is created. The transition
+now also requires multiplayer game mode, with a high shell-frame regression case.
+Native gameplay after this additional correction remains pending.

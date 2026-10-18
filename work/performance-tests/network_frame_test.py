@@ -29,7 +29,12 @@ using __int64 = long long;
 #define DEBUG_INFO_MAC(x) ((void)0)
 #define DEBUG_LOG_LEVEL(level, x) ((void)0)
 #define deleteInstance(x) delete (x)
-struct GameLogic { unsigned frame = 0; unsigned getFrame() const { return frame; } } game;
+struct GameLogic {
+    unsigned frame = 0;
+    bool multiplayer = false;
+    unsigned getFrame() const { return frame; }
+    bool isInMultiplayerGame() const { return multiplayer; }
+} game;
 GameLogic* TheGameLogic = &game;
 struct NetCommandList {};
 struct ConnectionManager {
@@ -66,6 +71,12 @@ public:
 tests = r'''
 int main() {
     Network network;
+    // Network creation happens in the lobby, while the shell frame is already high.
+    game.frame = 12000;
+    network.update();
+    assert(network.m_localStatus == NETLOCALSTATUS_PREGAME);
+    assert(network.manager.ticks.empty() && network.manager.cleared == 0);
+    game.multiplayer = true;
     game.frame = 0;
     network.update();
     assert(network.m_localStatus == NETLOCALSTATUS_PREGAME);

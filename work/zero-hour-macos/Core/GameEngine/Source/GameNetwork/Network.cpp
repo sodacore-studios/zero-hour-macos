@@ -545,7 +545,7 @@ void Network::advanceCommandFrame()
 		if (m_localStatus == NETLOCALSTATUS_PREGAME) {
 			// a sort-of-hack that prevents extraneous frames from being executed before the game actually starts.
 			// Idealy this shouldn't be necessary, but I don't think its hurting anything by being here.
-			if (TheGameLogic->getFrame() >= 1) {
+			if (TheGameLogic->isInMultiplayerGame() && TheGameLogic->getFrame() >= 1) {
 				DEBUG_INFO_MAC(("[NET_STATE] PREGAME -> INGAME frame=%d", TheGameLogic->getFrame()));
 				m_localStatus = NETLOCALSTATUS_INGAME;
 				if (getenv("ZERO_HOUR_NETWORK_TRACE"))
