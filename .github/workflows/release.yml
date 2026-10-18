@@ -123,6 +123,23 @@ jobs:
         run: cmake --preset macos -S work/zero-hour-macos -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3
       - name: Build native engine
         run: cmake --build work/zero-hour-macos/build/macos --target GeneralsOnlineZH --parallel 3
+      - name: Package native test candidate
+        if: github.ref != 'refs/heads/main'
+        run: |
+          app=work/zero-hour-macos/build/macos/GeneralsMD/GeneralsOnlineZH.app
+          mkdir -p "$app/Contents/Frameworks"
+          cp work/zero-hour-macos/build/macos/bin/libGameNetworkingSockets.dylib "$app/Contents/Frameworks/"
+          codesign --force --sign - "$app/Contents/Frameworks/libGameNetworkingSockets.dylib"
+          codesign --force --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          test -z "$(find "$app" -iname '*.big' -print -quit)"
+          ditto -c -k --sequesterRsrc --keepParent "$app" "$RUNNER_TEMP/macOS-arm64-candidate.zip"
+      - uses: actions/upload-artifact@v4
+        if: github.ref != 'refs/heads/main'
+        with:
+          name: macOS-arm64-candidate
+          path: ${{ runner.temp }}/macOS-arm64-candidate.zip
+          retention-days: 7
       - name: Determine next version
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         id: version
