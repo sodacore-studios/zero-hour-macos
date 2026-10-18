@@ -44,3 +44,12 @@ LLVM_PROFILE_FILE="$output/network-frame.profraw" "$output/network-frame-tests"
 "${profdata[@]}" merge -sparse "$output/network-frame.profraw" -o "$output/network-frame.profdata"
 "${cov[@]}" show "$output/network-frame-tests" -instr-profile="$output/network-frame.profdata" \
   -format=html -output-dir="$output/html/network-frame" "$output/network-frame.cpp"
+
+# An incoming peer can arrive before the outgoing connection is registered.
+python3 "$root/work/performance-tests/incoming_connection_test.py" "$output/incoming-connection.cpp"
+"${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -fprofile-instr-generate -fcoverage-mapping \
+  "$output/incoming-connection.cpp" -o "$output/incoming-connection-tests"
+LLVM_PROFILE_FILE="$output/incoming-connection.profraw" "$output/incoming-connection-tests"
+"${profdata[@]}" merge -sparse "$output/incoming-connection.profraw" -o "$output/incoming-connection.profdata"
+"${cov[@]}" show "$output/incoming-connection-tests" -instr-profile="$output/incoming-connection.profdata" \
+  -format=html -output-dir="$output/html/incoming-connection" "$output/incoming-connection.cpp"

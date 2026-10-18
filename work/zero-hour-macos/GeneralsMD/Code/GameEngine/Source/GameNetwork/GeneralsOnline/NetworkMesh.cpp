@@ -219,84 +219,8 @@ void OnSteamNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t
 		// Is this a connection we initiated, or one that we are receiving?
 		if (pMesh->GetListenSocketHandle() != k_HSteamListenSocket_Invalid && pInfo->m_info.m_hListenSocket == pMesh->GetListenSocketHandle())
 		{
-			// Somebody's knocking
-			// Note that we assume we will only ever receive a single connection
+			pMesh->AcceptIncomingConnection(pInfo->m_hConn, pInfo->m_info.m_identityRemote);
 
-			DEBUG_INFO_MAC(("[P2P] INCOMING connection from '%s' (remote identity='%s')",
-				pInfo->m_info.m_szConnectionDescription,
-				pInfo->m_info.m_identityRemote.GetGenericString() ? pInfo->m_info.m_identityRemote.GetGenericString() : "(null)"));
-
-			NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Considering Accepting\n", pInfo->m_info.m_szConnectionDescription);
-
-			if (connectionID != -1)
-			{
-				PlayerConnection& plrConnection = connections[connectionID];
-
-#if _DEBUG
-				if (connectionID != -1)
-					assert(plrConnection.m_hSteamConnection == k_HSteamNetConnection_Invalid); // not really a bug in this code, but a bug in the test
-#endif
-
-				if (pInfo != nullptr)
-				{
-
-
-					plrConnection.UpdateState(EConnectionState::CONNECTING_DIRECT, pMesh);
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM CONNECTION] Updating connection from %u to %u on user %lld", plrConnection.m_hSteamConnection, pInfo->m_hConn, plrConnection.m_userID);
-					SteamNetworkingSockets()->SetConnectionName(pInfo->m_hConn, std::format("Steam Connection User{}", plrConnection.m_userID).c_str());
-					plrConnection.m_hSteamConnection = pInfo->m_hConn;
-				}
-
-				// check user is in the lobby, otherwise reject
-				NGMP_OnlineServices_LobbyInterface* pLobbyInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
-				if (pLobbyInterface == nullptr)
-				{
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Lobby interface is null\n", pInfo->m_info.m_szConnectionDescription);
-
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection 2 %lld", plrConnection.m_userID);
-					SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Lobby interface is null (Rejected)", false);
-
-					if (TheNetwork != nullptr)
-					{
-						TheNetwork->GetConnectionManager()->disconnectPlayer(plrConnection.m_userID);
-					}
-
-					return;
-				}
-
-				auto currentLobby = pLobbyInterface->GetCurrentLobby();
-				bool bPlayerIsInLobby = false;
-				for (const auto& member : currentLobby.members)
-				{
-					// TODO_NGMP: Use bytes or SteamID instead... string compare is nasty
-					if (std::to_string(member.user_id) == pInfo->m_info.m_identityRemote.GetGenericString())
-					{
-						bPlayerIsInLobby = true;
-						break;
-					}
-				}
-
-				if (bPlayerIsInLobby)
-				{
-					DEBUG_INFO_MAC(("[P2P] ACCEPTING incoming connection from '%s'", pInfo->m_info.m_szConnectionDescription));
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Accepting - Player is in lobby\n", pInfo->m_info.m_szConnectionDescription);
-					[[maybe_unused]] EResult acceptResult = SteamNetworkingSockets()->AcceptConnection(pInfo->m_hConn);
-					DEBUG_INFO_MAC(("[P2P] AcceptConnection result=%d", (int)acceptResult));
-				}
-				else
-				{
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING][%s] Rejecting - Player is not in lobby\n", pInfo->m_info.m_szConnectionDescription);
-
-					NetworkLog(ELogVerbosity::LOG_RELEASE, "[DC] Closing connection not in lobby %lld", plrConnection.m_userID);
-					SteamNetworkingSockets()->CloseConnection(pInfo->m_hConn, 1000, "Player is not in lobby (Rejected)", false);
-
-					if (TheNetwork != nullptr)
-					{
-						TheNetwork->GetConnectionManager()->disconnectPlayer(plrConnection.m_userID);
-					}
-				}
-			}
-			
 		}
 		else
 		{
@@ -925,6 +849,56 @@ void NetworkMesh::SendACPacket(uint32_t userID, const void* pData, uint32_t data
 	{
 		NetworkLog(ELogVerbosity::LOG_RELEASE, "[AC] Send Packet ERR - user %u not found in connections", userID);
 	}
+}
+
+// Incoming handles are not in the outgoing map yet. Resolve the peer from the
+// authenticated lobby roster before creating a transport entry.
+void NetworkMesh::AcceptIncomingConnection(HSteamNetConnection handle, const SteamNetworkingIdentity& identity)
+{
+    auto* lobby = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_LobbyInterface>();
+    auto* auth = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+    const char* remote = identity.GetGenericString();
+    int64_t userID = -1;
+    if (lobby && auth && remote)
+    {
+        for (const auto& member : lobby->GetCurrentLobby().members)
+        {
+            if (member.user_id > 0 && member.user_id != auth->GetUserID()
+                && std::to_string(member.user_id) == remote)
+            {
+                userID = member.user_id;
+                break;
+            }
+        }
+    }
+    if (userID == -1)
+    {
+        SteamNetworkingSockets()->CloseConnection(handle, 1000, "Peer is not in the current lobby", false);
+        return;
+    }
+
+    std::lock_guard<std::recursive_mutex> lock(m_mapConnectionsMutex);
+    auto it = m_mapConnections.find(userID);
+    if (it != m_mapConnections.end()
+        && it->second.m_hSteamConnection != k_HSteamNetConnection_Invalid
+        && it->second.m_hSteamConnection != handle)
+    {
+        // Do not let a second incoming handle replace a negotiated connection.
+        SteamNetworkingSockets()->CloseConnection(handle, 1000, "Duplicate peer connection", false);
+        return;
+    }
+    const EResult result = SteamNetworkingSockets()->AcceptConnection(handle);
+    if (result != k_EResultOK)
+    {
+        SteamNetworkingSockets()->CloseConnection(handle, 1000, "Could not accept peer connection", false);
+        return;
+    }
+    if (it == m_mapConnections.end())
+        it = m_mapConnections.emplace(userID, PlayerConnection(userID, handle)).first;
+    else
+        it->second.m_hSteamConnection = handle;
+    it->second.UpdateState(EConnectionState::CONNECTING_DIRECT, this);
+    NetworkLog(ELogVerbosity::LOG_RELEASE, "[STEAM NETWORKING] Accepted lobby peer %lld on incoming connection %u", userID, handle);
 }
 
 void NetworkMesh::StartConnectionSignalling(const char* szMiddlewareID, int64_t remoteUserID, uint16_t preferredPort)

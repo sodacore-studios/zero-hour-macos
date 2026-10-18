@@ -192,6 +192,7 @@ public:
 
 	void SendACPacket(uint32_t userID, const void* pData, uint32_t dataLen);
 
+	void AcceptIncomingConnection(HSteamNetConnection handle, const SteamNetworkingIdentity& identity);
 	void StartConnectionSignalling(const char* szMiddlewareID, int64_t remoteUserID, uint16_t preferredPort);
 	void DisconnectUser(int64_t remoteUserID);
 	void Disconnect();
