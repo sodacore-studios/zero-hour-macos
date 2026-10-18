@@ -35,12 +35,12 @@
 #include "Lib/BaseType.h"
 #include "GameNetwork/NetworkDefs.h"
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #include "Common/FixedStepBudget.h"
 #endif
 
 class FrameMetrics {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     LogicRateWindow m_logicRateWindow;
 #endif
 public:

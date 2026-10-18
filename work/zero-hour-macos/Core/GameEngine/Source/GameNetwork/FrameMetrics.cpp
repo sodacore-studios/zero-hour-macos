@@ -87,7 +87,7 @@ FrameMetrics::~FrameMetrics() {
 }
 
 void FrameMetrics::init() {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     m_logicRateWindow.reset();
 #endif
 #if defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
@@ -150,7 +150,7 @@ void FrameMetrics::doPerFrameMetrics(UnsignedInt frame) {
 	//NetworkLog(ELogVerbosity::LOG_DEBUG, "doPerFrameMetrics for frame %d", frame);
 	// Do the measurement of the fps.
 	time_t curTime = timeGetTime();
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     double measuredLogicRate = 0;
     if (m_logicRateWindow.sample(TheGameLogic->getFrame(), curTime, measuredLogicRate)) {
 #else
@@ -160,7 +160,7 @@ void FrameMetrics::doPerFrameMetrics(UnsignedInt frame) {
 //			DEBUG_LOG(("FrameMetrics::doPerFrameMetrics - adding %f to fps history. average before: %f ", m_fpsList[m_fpsListIndex], m_averageFps));
 //		}
 		m_averageFps -= ((m_fpsList[m_fpsListIndex])) / TheGlobalData->m_networkFPSHistoryLength; // subtract out the old value from the average.
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
         m_fpsList[m_fpsListIndex] = (Real)measuredLogicRate;
 #else
 		m_fpsList[m_fpsListIndex] = TheDisplay->getAverageFPS();

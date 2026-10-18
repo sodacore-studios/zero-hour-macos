@@ -33,7 +33,7 @@
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
 
 #include "Common/GameEngine.h"
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #include "Common/FixedStepBudget.h"
 #endif
 #include "Common/MessageStream.h"
@@ -873,7 +873,7 @@ Bool Network::timeForNewFrame() {
 		}
 	}
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     return consumeNetworkDeadline(curTime, frameDelay, m_perfCountFreq, m_nextFrameTime);
 #endif
 
