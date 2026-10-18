@@ -39,7 +39,7 @@ LLVM_PROFILE_FILE="$output/game-speed.profraw" "$output/game-speed-tests"
 # Exercise production network frame advancement with no render-generated messages.
 python3 "$root/work/performance-tests/network_frame_test.py" "$output/network-frame.cpp"
 "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -D__APPLE__ -fprofile-instr-generate -fcoverage-mapping \
-  "$output/network-frame.cpp" -o "$output/network-frame-tests"
+  -DRETAIL_COMPATIBLE_NETWORKING=0 "$output/network-frame.cpp" -o "$output/network-frame-tests"
 LLVM_PROFILE_FILE="$output/network-frame.profraw" "$output/network-frame-tests"
 "${profdata[@]}" merge -sparse "$output/network-frame.profraw" -o "$output/network-frame.profdata"
 "${cov[@]}" show "$output/network-frame-tests" -instr-profile="$output/network-frame.profdata" \
@@ -53,3 +53,14 @@ LLVM_PROFILE_FILE="$output/incoming-connection.profraw" "$output/incoming-connec
 "${profdata[@]}" merge -sparse "$output/incoming-connection.profraw" -o "$output/incoming-connection.profdata"
 "${cov[@]}" show "$output/incoming-connection-tests" -instr-profile="$output/incoming-connection.profdata" \
   -format=html -output-dir="$output/html/incoming-connection" "$output/incoming-connection.cpp"
+
+# Diagnostic flags must not change the live protocol cadence.
+for retail in 0 1; do
+  for diagnostic in 0 1; do
+    flags=("-DRETAIL_COMPATIBLE_NETWORKING=$retail")
+    if [[ "$diagnostic" == 1 ]]; then flags+=(-DDEBUG_CRC); fi
+    "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror "${flags[@]}" \
+      "$output/network-frame.cpp" -o "$output/network-cadence-$retail-$diagnostic"
+    "$output/network-cadence-$retail-$diagnostic"
+  done
+done

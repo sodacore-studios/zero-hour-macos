@@ -11,7 +11,8 @@ source = (root / 'work/zero-hour-macos/Core/GameEngine/Source/GameNetwork/Networ
 def function(start, end):
     return source[source.index(start):source.index(end, source.index(start))]
 
-production = function('Int Network::getExecutionFrame()', '/**')
+production = source[source.index('#if !RETAIL_COMPATIBLE_NETWORKING'):source.index('// DEFINES')]
+production += function('Int Network::getExecutionFrame()', '/**')
 production += function('void Network::advanceCommandFrame()', 'Bool Network::processCommand')
 production += function('void Network::update()', 'void Network::liteupdate()')
 preamble = r'''
@@ -70,6 +71,7 @@ public:
 '''
 tests = r'''
 int main() {
+    assert(NET_CRC_INTERVAL == (RETAIL_COMPATIBLE_NETWORKING ? 100 : 1));
     Network network;
     // Network creation happens in the lobby, while the shell frame is already high.
     game.frame = 12000;

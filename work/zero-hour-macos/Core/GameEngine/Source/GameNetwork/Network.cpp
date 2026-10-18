@@ -57,7 +57,8 @@
 #include "GameNetwork/GeneralsOnline/NGMP_include.h"
 
 
-#if defined(DEBUG_CRC) && !RETAIL_COMPATIBLE_NETWORKING
+// Live peers must use the same CRC cadence regardless of diagnostic build flags.
+#if !RETAIL_COMPATIBLE_NETWORKING
 Int NET_CRC_INTERVAL = 1;
 #else
 Int NET_CRC_INTERVAL = 100;
