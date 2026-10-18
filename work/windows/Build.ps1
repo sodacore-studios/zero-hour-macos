@@ -8,9 +8,17 @@ $vs=& $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.
 if(!$vs){throw 'Visual Studio 2022 C++ Build Tools are required'}
 # OpenSSL's build invokes the x86 compiler and nmake directly.
 $devCmd=Join-Path $vs 'Common7\Tools\VsDevCmd.bat'
-& $env:ComSpec /s /c "`"`"$devCmd`" -no_logo -arch=x86 -host_arch=x64 && set`"" | ForEach-Object {
+$setup=New-Object Diagnostics.ProcessStartInfo
+$setup.FileName=$env:ComSpec
+$setup.Arguments='/d /s /c ""'+$devCmd+'" -no_logo -arch=x86 -host_arch=x64 && set"'
+$setup.UseShellExecute=$false;$setup.RedirectStandardOutput=$true
+$process=[Diagnostics.Process]::Start($setup)
+$environment=$process.StandardOutput.ReadToEnd();$process.WaitForExit()
+if($process.ExitCode -ne 0){throw 'Visual Studio environment setup failed'}
+$environment -split "`r?`n" | ForEach-Object {
     if($_ -match '^([^=]+)=(.*)$'){[Environment]::SetEnvironmentVariable($Matches[1],$Matches[2],'Process')}
 }
+if(!(Get-Command nmake -ErrorAction SilentlyContinue)){throw 'x86 nmake is missing from the compiler environment'}
 if(Test-Path 'C:\Strawberry\perl\bin\perl.exe'){$env:PATH='C:\Strawberry\perl\bin;'+$env:PATH}
 if(!(Get-Command perl -ErrorAction SilentlyContinue)){throw 'Install Strawberry Perl to build OpenSSL'}
 $cmake=Get-Command cmake -ErrorAction SilentlyContinue
