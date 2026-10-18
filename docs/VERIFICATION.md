@@ -50,12 +50,26 @@ binary. The live server keeps its existing accepted checksum until coordinated.
 - The known Windows test device was identified over SSH before changes: Windows 10
   build 19045, Intel HD Graphics and AMD Radeon R5 M255. Build Tools 2022 were
   installed in a separate test directory without rebooting the device.
-- The shared pacing, match-clock and input-budget suites pass locally; pacing and
-  clock header coverage is 100 percent. Native Windows execution is pending.
+- The shared pacing, match-clock and input-budget suites pass locally and under
+  native MSVC on the Windows test device. GitHub also passes the Windows LLVM
+  checks, coverage export and PowerShell launcher validation.
 - The private-server compatibility policy tests pass. The full .NET 10 Release
   server build succeeds with zero warnings and errors.
-- Full Windows compilation, packaged startup, graphics, input, audio and a complete
-  Mac-to-Windows Internet match are pending. Do not treat this candidate as a
-  verified Windows release. The live server has not been changed.
+- Windows x86 compilation and packaging passed in GitHub run 39613762580.
+  Hardware startup then exposed upstream DLLs requiring debug CRT files and a
+  missing Sentry runtime. That package is not a verified playable release. The
+  replacement builds networking from pinned source with Release runtimes and
+  checks the package dependency closure before upload.
+- An isolated staging service on the existing test server passed invitation
+  rejection, two authenticated WebSocket sessions, protected lobby create/join,
+  wrong-password rejection and TURN credential issuance. A public TURN probe
+  exchanged ten exact payloads bidirectionally and rejected an excluded peer.
+  These protocol tests do not establish a completed game or two separate Internet
+  access networks. The live service has not been changed.
+- The local macOS candidate completed the full 28:35 replay in 01:33, exit zero,
+  emitting 172 simulation CRC checkpoints through frame 102,600. Corresponding
+  Windows gameplay checksums, graphics, input, audio and a complete Mac-to-Windows
+  match are still pending. The original INIZH, MapsZH and GensecZH archive hashes
+  match on both test machines.
 - The Windows launcher currently uses manual updates; macOS retains its signed
   automatic updater. Windows ARM and Windows 11 hardware have not been tested.
