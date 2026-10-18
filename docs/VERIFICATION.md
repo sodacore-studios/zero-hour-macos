@@ -69,18 +69,18 @@ binary. The live server keeps its existing accepted checksum until coordinated.
   The native macOS candidate also logged in and created a lobby in its actual UI.
   These protocol tests do not establish a completed game or two separate Internet
   access networks. The live service has not been changed.
-- The local macOS candidate completed the full 28:35 replay in 01:33, exit zero,
-  emitting 172 simulation CRC checkpoints through frame 102,600. Corresponding
-  Windows gameplay checksums, audio and a complete Mac-to-Windows match are still
-  pending. The Windows replay needs the interactive desktop: the SSH session
-  failed in audio initialization, while an interactive run reached simulation
-  and reported a mismatch against the recorded CRC at frame 239. A matching
-  cross-platform replay is not yet verified. Dense comparison subsequently
-  found identical checkpoints through frame 239 and a byte-identical 1,991,709-byte
-  state dump at frame 60. The first frame-240 difference was one pathfinder
-  allocation counter. macOS-only build definitions had selected different
-  pathfinding behavior; these definitions are now shared and retesting is pending.
-  The original INIZH, MapsZH and GensecZH archive hashes match on both test machines.
+- The local candidates completed the same full 28:35 replay with exit zero on
+  both platforms: macOS in 01:45 and Windows in 04:49. All 1,716 simulation CRC
+  checkpoints (every 60 frames through frame 102,900) matched exactly. This tests
+  replay determinism; a complete live Mac-to-Windows match remains pending.
+  The original INIZH, MapsZH and GensecZH archive hashes also match.
+- The replay comparison identified and fixed a platform-specific pathfinding
+  allocation rule: macOS-only compatibility definitions are now shared with
+  Windows. Before the fix, a frame-240 state dump differed in an allocation
+  counter. After the fix, the full replay matched without disabling CRC checks.
+- Windows replay testing used the interactive desktop. Starting the legacy Miles
+  audio backend in the SSH session failed during initialization. Audio output
+  itself has not been verified.
 - The Windows launcher was opened on the test desktop through RustDesk. It
   detected both EA game folders and rejected an empty player name. Its process
   exit reporting also reproduced the missing-DLL startup failure above.
@@ -88,7 +88,15 @@ binary. The live server keeps its existing accepted checksum until coordinated.
   1280 x 800 wrote `Resolution = 1280 800` and opened an actual 1280 x 800 game
   viewport. A skirmish rendered, WASD moved the camera in both directions, left
   click selected a construction dozer, and a short right click moved it to the
-  selected ground location. Command hotkey labels were visible. These checks do
+  selected ground location. Command hotkey labels were visible. The subsequent
+  local candidate opened the pause menu on Escape and closed normally through
+  its window close button. These checks do
   not establish every resolution, GPU, audio device or a complete online game.
 - The Windows launcher currently uses manual updates; macOS retains its signed
   automatic updater. Windows ARM and Windows 11 hardware have not been tested.
+
+The first native cross-platform online test connected and loaded the map, but
+commands did not execute. Investigation found that network frame initialization
+was tied to render-generated messages and could miss frame one during catch-up.
+Frame bookkeeping now advances on every network update. A corrected native
+match, actual command execution and relay-only gameplay are still pending.
