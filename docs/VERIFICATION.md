@@ -64,6 +64,7 @@ binary. The live server keeps its existing accepted checksum until coordinated.
   rejection, two authenticated WebSocket sessions, protected lobby create/join,
   wrong-password rejection and TURN credential issuance. A public TURN probe
   exchanged ten exact payloads bidirectionally and rejected an excluded peer.
+  The native macOS candidate also logged in and created a lobby in its actual UI.
   These protocol tests do not establish a completed game or two separate Internet
   access networks. The live service has not been changed.
 - The local macOS candidate completed the full 28:35 replay in 01:33, exit zero,
@@ -71,5 +72,8 @@ binary. The live server keeps its existing accepted checksum until coordinated.
   Windows gameplay checksums, graphics, input, audio and a complete Mac-to-Windows
   match are still pending. The original INIZH, MapsZH and GensecZH archive hashes
   match on both test machines.
+- The Windows launcher was opened on the test desktop through RustDesk. It
+  detected both EA game folders and rejected an empty player name. Its process
+  exit reporting also reproduced the missing-DLL startup failure above.
 - The Windows launcher currently uses manual updates; macOS retains its signed
   automatic updater. Windows ARM and Windows 11 hardware have not been tested.

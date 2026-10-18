@@ -83,5 +83,17 @@ $play.Add_Click({
     $script:game=[Diagnostics.Process]::Start($start);$play.Enabled=$false;$status.Text='Game running. Close the game before switching versions.'
  } catch {[Windows.Forms.MessageBox]::Show($_.Exception.Message,'Zero Hour') | Out-Null}
 })
-$timer=New-Object Windows.Forms.Timer;$timer.Interval=1000;$timer.Add_Tick({if($script:game -and $script:game.HasExited){$play.Enabled=$true;$status.Text="Game exited ($($script:game.ExitCode)).";$script:game=$null}});$timer.Start()
+$timer=New-Object Windows.Forms.Timer;$timer.Interval=1000
+$timer.Add_Tick({
+    if($script:game -and $script:game.HasExited){
+        $play.Enabled=$true
+        $status.Text=switch($script:game.ExitCode){
+            0 {'Game closed.'}
+            -1073741515 {'A required DLL is missing. Extract the complete release ZIP and check the original game installation.'}
+            -1073741701 {'A DLL has the wrong architecture. Extract a clean copy of the Windows x86 release.'}
+            default {"Game exited ($($script:game.ExitCode)). See the troubleshooting guide."}
+        }
+        $script:game.Dispose();$script:game=$null
+    }
+});$timer.Start()
 [void]$form.ShowDialog();$timer.Dispose()
