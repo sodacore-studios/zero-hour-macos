@@ -1,0 +1,5 @@
+/.env
+/appsettings.json
+/turnserver.conf
+/publish/
+/backups/

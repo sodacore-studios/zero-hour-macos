@@ -1,0 +1,35 @@
+name: zerohour-private
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: zerohour
+      MARIADB_USER: zerohour
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+    mem_limit: 512m
+    cpus: 1
+  service:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3097:8080"
+      - "${SERVICE_LAN_IP:?set SERVICE_LAN_IP}:3097:8080"
+    volumes:
+      - ./appsettings.json:/app/appsettings.json:ro
+    mem_limit: 512m
+    cpus: 1
+volumes:
+  database:

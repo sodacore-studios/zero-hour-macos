@@ -1,0 +1,294 @@
+/*
+**	Command & Conquer Generals Zero Hour(tm)
+**	Copyright 2025 Electronic Arts Inc.
+**
+**	This program is free software: you can redistribute it and/or modify
+**	it under the terms of the GNU General Public License as published by
+**	the Free Software Foundation, either version 3 of the License, or
+**	(at your option) any later version.
+**
+**	This program is distributed in the hope that it will be useful,
+**	but WITHOUT ANY WARRANTY; without even the implied warranty of
+**	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**	GNU General Public License for more details.
+**
+**	You should have received a copy of the GNU General Public License
+**	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+//																																						//
+//  (c) 2001-2003 Electronic Arts Inc.																				//
+//																																						//
+////////////////////////////////////////////////////////////////////////////////
+
+//////// StdBIGFileSystem.h ///////////////////////////
+// Stephan Vedder, April 2025
+/////////////////////////////////////////////////////////////
+
+#include "Common/AudioAffect.h"
+#include "Common/ArchiveFile.h"
+#include "Common/ArchiveFileSystem.h"
+#include "Common/file.h"
+#include "Common/GameAudio.h"
+#include "Common/GameMemory.h"
+#include "Common/GlobalData.h"
+#include "Common/LocalFileSystem.h"
+
+#if RTS_ZEROHOUR
+#include "Common/Registry.h"
+#endif
+
+#include "StdDevice/Common/StdBIGFile.h"
+#include "StdDevice/Common/StdBIGFileSystem.h"
+#include "Utility/endian_compat.h"
+
+#include <algorithm>
+#include <cctype>
+#include <vector>
+
+static const char *BIGFileIdentifier = "BIGF";
+
+// An overwriting archive is inserted ahead of the ones already in the tree, so the last one
+// loaded would win. Walking the list backwards restores plain name order, which is what
+// Windows gets from a single directory listing: 00_Mod.big outranks 01_Mod.big.
+static std::vector<const AsciiString *> archivesInLoadOrder(const FilenameList &filenameList, Bool overwrite)
+{
+	std::vector<const AsciiString *> archives;
+	archives.reserve(filenameList.size());
+
+	for (FilenameList::const_iterator it = filenameList.begin(); it != filenameList.end(); ++it)
+		archives.push_back(&(*it));
+
+	if (overwrite)
+		std::reverse(archives.begin(), archives.end());
+
+	return archives;
+}
+
+// Community Patch drops overlays as NNN_Name.big into the ZH root. Under a curated mod they
+// fight the mod's UI (ControlBarPro/HD). Mod packages use the same NNN_ prefix, but they are
+// loaded later via loadModPackages(overwrite=TRUE) and are not affected by this filter.
+static Bool isCommunityPatchOverlayBig(const AsciiString& path)
+{
+	const char* base = path.str();
+	for (const char* p = path.str(); *p != '\0'; ++p)
+	{
+		if (*p == '\\' || *p == '/')
+			base = p + 1;
+	}
+
+	return std::isdigit(static_cast<unsigned char>(base[0]))
+		&& std::isdigit(static_cast<unsigned char>(base[1]))
+		&& std::isdigit(static_cast<unsigned char>(base[2]))
+		&& base[3] == '_'
+		&& path.endsWithNoCase(".big");
+}
+
+StdBIGFileSystem::StdBIGFileSystem() : ArchiveFileSystem() {
+}
+
+StdBIGFileSystem::~StdBIGFileSystem() {
+}
+
+void StdBIGFileSystem::init() {
+	DEBUG_ASSERTCRASH(TheLocalFileSystem != nullptr, ("TheLocalFileSystem must be initialized before TheArchiveFileSystem."));
+	if (TheLocalFileSystem == nullptr) {
+		return;
+	}
+
+	loadBigFilesFromDirectory("", "*.big");
+
+#if RTS_ZEROHOUR
+    AsciiString installPath;
+    GetStringFromGeneralsRegistry("", "InstallPath", installPath );
+    DEBUG_ASSERTCRASH(!installPath.isEmpty(), ("Be 1337! Go install Generals!"));
+    if (!installPath.isEmpty())
+      loadBigFilesFromDirectory(installPath, "*.big");
+#endif
+}
+
+void StdBIGFileSystem::reset() {
+}
+
+void StdBIGFileSystem::update() {
+}
+
+void StdBIGFileSystem::postProcessLoad() {
+}
+
+ArchiveFile * StdBIGFileSystem::openArchiveFile(const Char *filename) {
+	File *fp = TheLocalFileSystem->openFile(filename, File::READ | File::BINARY);
+	AsciiString archiveFileName;
+	archiveFileName = filename;
+	archiveFileName.toLower();
+	Int archiveFileSize = 0;
+	Int numLittleFiles = 0;
+
+	ArchiveFile *archiveFile = NEW StdBIGFile(filename, AsciiString::TheEmptyString);
+
+	DEBUG_LOG(("StdBIGFileSystem::openArchiveFile - opening BIG file %s", filename));
+
+	if (fp == nullptr) {
+		DEBUG_FILESYSTEM_MAC(("FAILED to open BIG Archive: %s", filename));
+		DEBUG_CRASH(("Could not open archive file %s for parsing", filename));
+		return nullptr;
+	}
+
+	AsciiString asciibuf;
+	char buffer[_MAX_PATH];
+	fp->read(buffer, 4); // read the "BIG" at the beginning of the file.
+	buffer[4] = 0;
+	if (strcmp(buffer, BIGFileIdentifier) != 0) {
+		DEBUG_CRASH(("Error reading BIG file identifier in file %s", filename));
+		fp->close();
+		fp = nullptr;
+		return nullptr;
+	}
+
+	// read in the file size.
+	fp->read(&archiveFileSize, 4);
+
+	DEBUG_LOG(("StdBIGFileSystem::openArchiveFile - size of archive file is %d bytes", archiveFileSize));
+
+//	char t;
+
+	// read in the number of files contained in this BIG file.
+	// change the order of the bytes cause the file size is in reverse byte order for some reason.
+	fp->read(&numLittleFiles, 4);
+	numLittleFiles = betoh(numLittleFiles);
+
+	DEBUG_LOG(("StdBIGFileSystem::openArchiveFile - %d are contained in archive", numLittleFiles));
+//	for (Int i = 0; i < 2; ++i) {
+//		t = buffer[i];
+//		buffer[i] = buffer[(4-i)-1];
+//		buffer[(4-i)-1] = t;
+//	}
+
+	// seek to the beginning of the directory listing.
+	fp->seek(0x10, File::START);
+	// read in each directory listing.
+	ArchivedFileInfo *fileInfo = NEW ArchivedFileInfo;
+
+	for (Int i = 0; i < numLittleFiles; ++i) {
+		Int filesize = 0;
+		Int fileOffset = 0;
+		fp->read(&fileOffset, 4);
+		fp->read(&filesize, 4);
+
+		filesize = betoh(filesize);
+		fileOffset = betoh(fileOffset);
+
+		fileInfo->m_archiveFilename = archiveFileName;
+		fileInfo->m_offset = fileOffset;
+		fileInfo->m_size = filesize;
+
+		// read in the path name of the file.
+		Int pathIndex = -1;
+		do {
+			++pathIndex;
+			// Guard the fixed-size buffer: a malformed entry would otherwise walk past it.
+			if (pathIndex >= _MAX_PATH) {
+				break;
+			}
+			fp->read(buffer + pathIndex, 1);
+		} while (buffer[pathIndex] != 0);
+
+		Int filenameIndex = pathIndex;
+		while ((filenameIndex >= 0) && (buffer[filenameIndex] != '\\') && (buffer[filenameIndex] != '/')) {
+			--filenameIndex;
+		}
+
+		fileInfo->m_filename = (char *)(buffer + filenameIndex + 1);
+		fileInfo->m_filename.toLower();
+		buffer[filenameIndex + 1] = 0;
+
+		AsciiString path;
+		path = buffer;
+
+		AsciiString debugpath;
+		debugpath = path;
+		debugpath.concat(fileInfo->m_filename);
+//		DEBUG_LOG(("StdBIGFileSystem::openArchiveFile - adding file %s to archive file %s, file number %d", debugpath.str(), fileInfo->m_archiveFilename.str(), i));
+
+		archiveFile->addFile(path, fileInfo);
+	}
+
+	archiveFile->attachFile(fp);
+
+	delete fileInfo;
+	fileInfo = nullptr;
+
+	// leave fp open as the archive file will be using it.
+
+	return archiveFile;
+}
+
+void StdBIGFileSystem::closeArchiveFile(const Char *filename) {
+	// Need to close the specified big file
+	ArchiveFileMap::iterator it =  m_archiveFileMap.find(filename);
+	if (it == m_archiveFileMap.end()) {
+		return;
+	}
+
+	if (stricmp(filename, MUSIC_BIG) == 0) {
+		// Stop the current audio
+		TheAudio->stopAudio(AudioAffect_Music);
+
+		// No need to turn off other audio, as the lookups will just fail.
+	}
+	DEBUG_ASSERTCRASH(stricmp(filename, MUSIC_BIG) == 0, ("Attempting to close Archive file '%s', need to add code to handle its shutdown correctly.", filename));
+
+	// may need to do some other processing here first.
+
+	delete (it->second);
+	m_archiveFileMap.erase(it);
+}
+
+void StdBIGFileSystem::closeAllArchiveFiles() {
+}
+
+void StdBIGFileSystem::closeAllFiles() {
+}
+
+Bool StdBIGFileSystem::loadBigFilesFromDirectory(AsciiString dir, AsciiString fileMask, Bool overwrite) {
+
+	FilenameList filenameList;
+	TheLocalFileSystem->getFileListInDirectory(dir, "", fileMask, filenameList, TRUE);
+
+	Bool actuallyAdded = FALSE;
+
+	for (const AsciiString *entry : archivesInLoadOrder(filenameList, overwrite)) {
+		const AsciiString &filename = *entry;
+#if RTS_ZEROHOUR
+		// TheSuperHackers @bugfix bobtista 18/11/2025 Skip duplicate INIZH.big in Data\INI to prevent CRC mismatches.
+		// English, Chinese, and Korean SKUs shipped with two INIZH.big files (one in Run directory, one in Run\Data\INI).
+		// The DeleteFile cleanup doesn't work on EA App/Origin installs because the folder is not writable, so we skip loading it instead.
+		if (filename.endsWithNoCase("Data\\INI\\INIZH.big") || filename.endsWithNoCase("Data/INI/INIZH.big")) {
+			continue;
+		}
+#endif
+
+		if (!overwrite
+			&& TheGlobalData != nullptr
+			&& TheGlobalData->m_modDir.isNotEmpty()
+			&& isCommunityPatchOverlayBig(filename))
+		{
+			DEBUG_LOG(("StdBIGFileSystem::loadBigFilesFromDirectory - skipping patch overlay under mod: %s", filename.str()));
+			continue;
+		}
+
+		ArchiveFile *archiveFile = openArchiveFile(filename.str());
+
+		if (archiveFile != nullptr) {
+			DEBUG_FILESYSTEM_MAC(("Loaded BIG Archive: %s", filename.str()));
+			DEBUG_LOG(("StdBIGFileSystem::loadBigFilesFromDirectory - loading %s into the directory tree.", filename.str()));
+			loadIntoDirectoryTree(archiveFile, overwrite);
+			m_archiveFileMap[filename] = archiveFile;
+			DEBUG_LOG(("StdBIGFileSystem::loadBigFilesFromDirectory - %s inserted into the archive file map.", filename.str()));
+			actuallyAdded = TRUE;
+		}
+	}
+
+	return actuallyAdded;
+}

@@ -1,0 +1,14 @@
+[
+	{
+		"name": "All Games",
+		"rooms": [
+			{
+				"name": "General",
+				"default": true
+			},
+			{
+				"name": "Tournament"
+			}
+		]
+	}
+]

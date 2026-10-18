@@ -1,0 +1,220 @@
+/*
+**	Command & Conquer Generals Zero Hour(tm)
+**	Copyright 2025 TheSuperHackers
+**
+**	This program is free software: you can redistribute it and/or modify
+**	it under the terms of the GNU General Public License as published by
+**	the Free Software Foundation, either version 3 of the License, or
+**	(at your option) any later version.
+**
+**	This program is distributed in the hope that it will be useful,
+**	but WITHOUT ANY WARRANTY; without even the implied warranty of
+**	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**	GNU General Public License for more details.
+**
+**	You should have received a copy of the GNU General Public License
+**	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "PreRTS.h"
+#include "Common/FrameRateLimit.h"
+#include <chrono>
+#include <thread>
+
+#ifdef __APPLE__
+#include <mach/mach_time.h>
+#endif
+
+
+#ifdef _WIN32
+FrameRateLimit::FrameRateLimit()
+{
+	LARGE_INTEGER freq;
+	LARGE_INTEGER start;
+	QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&start);
+	m_freq = freq.QuadPart;
+	m_start = start.QuadPart;
+}
+
+Real FrameRateLimit::wait(UnsignedInt maxFps)
+{
+	PROFILER_SECTION;
+	LARGE_INTEGER tick;
+	QueryPerformanceCounter(&tick);
+	double elapsedSeconds = static_cast<double>(tick.QuadPart - m_start) / m_freq;
+	const double targetSeconds = 1.0 / maxFps;
+	const double sleepSeconds = targetSeconds - elapsedSeconds - 0.002; // leave ~2ms for spin wait
+
+	if (sleepSeconds > 0.0)
+	{
+		// Non busy wait with Munkee sleep
+		DWORD dwMilliseconds = static_cast<DWORD>(sleepSeconds * 1000);
+		Sleep(dwMilliseconds);
+	}
+
+	// Busy wait for remaining time
+	do
+	{
+		QueryPerformanceCounter(&tick);
+		elapsedSeconds = static_cast<double>(tick.QuadPart - m_start) / m_freq;
+	}
+	while (elapsedSeconds < targetSeconds);
+
+	m_start = tick.QuadPart;
+	return (Real)elapsedSeconds;
+}
+#else
+FrameRateLimit::FrameRateLimit()
+{
+	m_start = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+	m_freq = std::chrono::high_resolution_clock::period::den / std::chrono::high_resolution_clock::period::num;
+}
+
+#ifdef __APPLE__
+static void sleepForSeconds(double seconds)
+{
+	static mach_timebase_info_data_t timebase = { 0, 0 };
+	if (timebase.denom == 0)
+	{
+		mach_timebase_info(&timebase);
+	}
+
+	const uint64_t nanoseconds = static_cast<uint64_t>(seconds * 1.0e9);
+	mach_wait_until(mach_absolute_time() + nanoseconds * timebase.denom / timebase.numer);
+}
+
+static const double s_spinWaitSeconds = 0.0005;
+#else
+static const double s_spinWaitSeconds = 0.002;
+#endif
+
+Real FrameRateLimit::wait(UnsignedInt maxFps)
+{
+	auto now = std::chrono::high_resolution_clock::now();
+	double elapsedSeconds = static_cast<double>(now.time_since_epoch().count() - m_start) / m_freq;
+	const double targetSeconds = 1.0 / maxFps;
+	const double sleepSeconds = targetSeconds - elapsedSeconds - s_spinWaitSeconds;
+
+	if (sleepSeconds > 0.0)
+	{
+#ifdef __APPLE__
+		sleepForSeconds(sleepSeconds);
+#else
+		// Sleep for millisecond
+		std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long>(sleepSeconds * 1000)));
+#endif
+	}
+
+	// Busy wait for remaining time
+	do
+	{
+		now = std::chrono::high_resolution_clock::now();
+		elapsedSeconds = static_cast<double>(now.time_since_epoch().count() - m_start) / m_freq;
+	}
+	while (elapsedSeconds < targetSeconds);
+
+	const long long targetTicks = static_cast<long long>(targetSeconds * m_freq);
+	const long long nowTicks = now.time_since_epoch().count();
+
+	m_start += targetTicks;
+
+	if (nowTicks - m_start > targetTicks)
+	{
+		m_start = nowTicks;
+	}
+
+	return (Real)elapsedSeconds;
+}
+#endif
+
+void FrameRateLimit::reset()
+{
+#ifdef __APPLE__
+	m_start = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+#else
+	LARGE_INTEGER tick;
+	QueryPerformanceCounter(&tick);
+	m_start = tick.QuadPart;
+#endif
+}
+
+
+const UnsignedInt RenderFpsPreset::s_fpsValues[] = {
+#if defined(GENERALS_ONLINE) && defined(GENERALS_ONLINE_HIGH_FPS_SERVER)
+	60, 65, 70, 72, 75, 80, 85, 90, 100, 110, 120, 144, 240, 480, UncappedFpsValue };
+#else
+	30, 50, 56, 60, 65, 70, 72, 75, 80, 85, 90, 100, 110, 120, 144, 240, 480, UncappedFpsValue };
+#endif
+
+#if defined(GENERALS_ONLINE)
+static_assert(LOGICFRAMES_PER_SECOND <= GENERALS_ONLINE_HIGH_FPS_LIMIT, "Min FPS values need to be revisited!");
+#else
+static_assert(LOGICFRAMES_PER_SECOND <= 30, "Min FPS values need to be revisited!");
+#endif
+
+UnsignedInt RenderFpsPreset::getNextFpsValue(UnsignedInt value)
+{
+	const Int first = 0;
+	const Int last = ARRAY_SIZE(s_fpsValues) - 1;
+	for (Int i = first; i < last; ++i)
+	{
+		if (value >= s_fpsValues[i] && value < s_fpsValues[i + 1])
+		{
+			return s_fpsValues[i + 1];
+		}
+	}
+	return s_fpsValues[last];
+}
+
+UnsignedInt RenderFpsPreset::getPrevFpsValue(UnsignedInt value)
+{
+	const Int first = 0;
+	const Int last = ARRAY_SIZE(s_fpsValues) - 1;
+	for (Int i = last; i > first; --i)
+	{
+		if (value <= s_fpsValues[i] && value > s_fpsValues[i - 1])
+		{
+			return s_fpsValues[i - 1];
+		}
+	}
+	return s_fpsValues[first];
+}
+
+UnsignedInt RenderFpsPreset::changeFpsValue(UnsignedInt value, FpsValueChange change)
+{
+	switch (change)
+	{
+	default:
+	case FpsValueChange_Increase: return getNextFpsValue(value);
+	case FpsValueChange_Decrease: return getPrevFpsValue(value);
+	}
+}
+
+
+UnsignedInt LogicTimeScaleFpsPreset::getNextFpsValue(UnsignedInt value)
+{
+	return value + StepFpsValue;
+}
+
+UnsignedInt LogicTimeScaleFpsPreset::getPrevFpsValue(UnsignedInt value)
+{
+	if (value - StepFpsValue < MinFpsValue)
+	{
+		return MinFpsValue;
+	}
+	else
+	{
+		return value - StepFpsValue;
+	}
+}
+
+UnsignedInt LogicTimeScaleFpsPreset::changeFpsValue(UnsignedInt value, FpsValueChange change)
+{
+	switch (change)
+	{
+	default:
+	case FpsValueChange_Increase: return getNextFpsValue(value);
+	case FpsValueChange_Decrease: return getPrevFpsValue(value);
+	}
+}

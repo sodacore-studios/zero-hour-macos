@@ -1,0 +1,4 @@
+Build/Logs/
+backup_conflicts/
+Build/tmp_audio/
+Tools/**.exe

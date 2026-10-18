@@ -1,0 +1,19 @@
+{
+  "zero-hour-macos": {
+    "upstream": "https://github.com/OKJID/GameClient.git",
+    "commit": "506f1e45b806ae5bdfcc67e8bda54b1ae44a35f2",
+    "branch": "macos-port",
+    "snapshot_includes_local_changes": true,
+    "omitted_uninitialized_gitlinks": [
+      "Dependencies/fdlibm-deterministic",
+      "GeneralsReplays"
+    ]
+  },
+  "zero-hour-services": {
+    "upstream": "https://github.com/GeneralsOnlineDevelopmentTeam/Services.git",
+    "commit": "85dfbc7ac6f9e336f5d18939f3cd1eb20663b6ea",
+    "branch": "main",
+    "snapshot_includes_local_changes": true,
+    "omitted_uninitialized_gitlinks": []
+  }
+}

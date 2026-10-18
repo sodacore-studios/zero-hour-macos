@@ -1,0 +1,107 @@
+name: Build and release
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang llvm
+      - run: bash work/performance-tests/run.sh "$RUNNER_TEMP/coverage"
+      - name: Terrain regression tests
+        run: |
+          c++ -std=c++17 -Iwork/terrain-tests -Iwork/zero-hour-macos/Core/GameEngineDevice/Include/W3DDevice/GameClient work/terrain-tests/coverage.cpp -o "$RUNNER_TEMP/terrain-tests"
+          "$RUNNER_TEMP/terrain-tests"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pacing-coverage
+          path: ${{ runner.temp }}/coverage/html
+  launcher:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash work/update-tests/run.sh "$RUNNER_TEMP/update-tests"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: updater-coverage
+          path: ${{ runner.temp }}/update-tests/html
+  required-checks:
+    if: always()
+    needs: [core, launcher]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require all deterministic checks
+        env:
+          CORE: ${{ needs.core.result }}
+          LAUNCHER: ${{ needs.launcher.result }}
+        run: test "$CORE" = success && test "$LAUNCHER" = success
+  native:
+    needs: required-checks
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build dependencies
+        run: brew install cmake ninja autoconf automake libtool pkg-config
+      - name: Configure native Apple Silicon engine
+        run: cmake --preset macos -S work/zero-hour-macos -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3
+      - name: Build native engine
+        run: cmake --build work/zero-hour-macos/build/macos --target GeneralsOnlineZH --parallel 3
+      - name: Determine next version
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: version
+        run: python3 work/release/version.py >> "$GITHUB_OUTPUT"
+      - name: Sign and package release
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          key = Path(os.environ['RUNNER_TEMP']) / 'update-signing.key'
+          key.write_bytes(base64.b64decode(os.environ['UPDATE_SIGNING_KEY'], validate=True))
+          key.chmod(0o600)
+          PY
+          python3 work/release/package.py --version "$RELEASE_VERSION" --key "$RUNNER_TEMP/update-signing.key"
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/update-signing.key"
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          name: macOS-arm64-release
+          path: outputs/
+          retention-days: 7
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [required-checks, native]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: macOS-arm64-release
+          path: outputs
+      - name: Publish verified release and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.native.outputs.version }}
+        run: |
+          gh release create "v$VERSION" outputs/"$VERSION"/* --target "$GITHUB_SHA" --title "Zero Hour $VERSION · Apple Silicon" --notes-file docs/RELEASE_NOTES.md --latest

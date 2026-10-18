@@ -1,0 +1,178 @@
+import SwiftUI
+import AppKit
+
+struct AboutView: View {
+    @AppStorage("LAUNCHER_LANGUAGE") private var launcherLanguage: String = "en"
+    
+    private var accent: Color { GameProfile.current.theme.accent }
+    private let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text(launcherLanguage).frame(width: 0, height: 0).opacity(0)
+            
+            _buildLogo()
+            _buildTitle()
+            _buildCredits()
+            Divider().background(Color.white.opacity(0.2))
+            _buildLinks()
+            _buildCrashReportsNote()
+            _buildLegal()
+        }
+        .padding(30)
+        .frame(width: 420, height: 530)
+        .background(Color(white: 0.1))
+    }
+
+    private func _buildLogo() -> some View {
+        Group {
+            if let imgPath = Bundle.main.path(forResource: "AppIcon", ofType: "png"),
+               let nsImg = NSImage(contentsOfFile: imgPath) {
+                Image(nsImage: nsImg)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: accent.opacity(0.4), radius: 8)
+            } else {
+                Image(systemName: "gamecontroller.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(accent)
+            }
+        }
+    }
+
+    private func _buildTitle() -> some View {
+        VStack(spacing: 4) {
+            Text("Generals Online")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.white)
+
+            Text(L10n.about.nativePort)
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundColor(accent)
+
+            Text(String(format: L10n.about.version, version))
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundColor(.white.opacity(0.5))
+
+            if !UpdateChecker.currentVersionLabel.isEmpty {
+                Text(String(format: L10n.about.launcherVersion, UpdateChecker.currentVersionLabel))
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.35))
+            }
+        }
+    }
+
+    private func _buildCredits() -> some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                if let imgPath = Bundle.main.path(forResource: "author_logo", ofType: "png"),
+                   let nsImg = NSImage(contentsOfFile: imgPath) {
+                    Image(nsImage: nsImg)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 36, height: 36)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(accent.opacity(0.5), lineWidth: 1))
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.about.portAuthor)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+
+                    Text("Metal Renderer • Apple Silicon")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+
+            Text(L10n.about.builtOnTop)
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.4))
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    private func _buildLinks() -> some View {
+        HStack(spacing: 20) {
+            _buildLink(title: L10n.about.website, url: "https://general-online-zh.web.app")
+            _buildLink(title: "Telegram", url: "https://t.me/GeneralsOnlineMacOSChannel")
+            _buildLink(title: "GitHub", url: "https://github.com/OKJID/GameClient")
+        }
+    }
+
+    private func _buildLink(title: String, url: String) -> some View {
+        Button(action: {
+            Analytics.logLinkOpened(target: title.lowercased(), location: "about")
+
+            if let link = URL(string: url) {
+                NSWorkspace.shared.open(link)
+            }
+        }) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundColor(accent)
+                .underline()
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { inside in
+            if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+        }
+    }
+
+    private func _buildCrashReportsNote() -> some View {
+        Text(L10n.about.crashReports)
+            .font(.system(size: 11))
+            .foregroundColor(.white.opacity(0.45))
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func _buildLegal() -> some View {
+        Text(L10n.about.legal)
+            .font(.system(size: 10))
+            .foregroundColor(.white.opacity(0.3))
+            .multilineTextAlignment(.center)
+            .lineSpacing(2)
+    }
+}
+
+class AboutWindowController {
+    private static var window: NSWindow?
+
+    static func show() {
+        if let existing = window {
+            existing.title = L10n.about.windowTitle
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let aboutView = NSHostingView(rootView: AboutView())
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 530),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        win.contentView = aboutView
+        win.title = L10n.about.windowTitle
+        win.center()
+        win.isReleasedWhenClosed = false
+        
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: win,
+            queue: .main
+        ) { _ in
+            AboutWindowController.window = nil
+        }
+        
+        win.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        window = win
+    }
+}

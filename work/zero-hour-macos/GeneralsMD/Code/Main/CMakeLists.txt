@@ -1,0 +1,161 @@
+add_executable(z_generals WIN32)
+
+# Use a binary name that doesn't conflict with original game.
+if("${CMAKE_SYSTEM}" MATCHES "Windows")
+    set_target_properties(z_generals PROPERTIES OUTPUT_NAME GeneralsOnlineZH)
+else()
+    set_target_properties(z_generals PROPERTIES OUTPUT_NAME GeneralsOnlineZH)
+endif()
+
+target_link_libraries(z_generals PRIVATE
+    binkstub
+    comctl32
+    core_debug
+    core_profile_legacy
+    d3d8
+    d3dx8
+    dinput8
+    dxguid
+    imm32
+    milesstub
+    vfw32
+    winmm
+    z_gameengine
+    z_gameenginedevice
+    zi_always
+)
+
+# TODO Originally referred to build host and user, replace with git info perhaps?
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/GeneratedVersion.h
+"#pragma once
+
+#define VERSION_LOCALBUILDNUM 0
+#define VERSION_BUILDUSER \"\"
+#define VERSION_BUILDLOC \"\"
+"
+)
+
+# Based on original binary values for these variables.
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/BuildVersion.h
+"#pragma once
+
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 4
+#define VERSION_BUILDNUM 601
+"
+)
+
+if(MSVC)
+    target_link_options(z_generals PRIVATE "/NODEFAULTLIB:libci.lib")
+endif()
+
+target_include_directories(z_generals PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+target_sources(z_generals PRIVATE
+    WinMain.cpp
+    WinMain.h
+)
+
+if(WIN32)
+	add_custom_command(TARGET z_generals POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${CMAKE_CURRENT_SOURCE_DIR}/../GameEngine/Source/GameNetwork/GeneralsOnline/Vendor/DiscordRPC/discord-rpc.dll"
+			"$<TARGET_FILE_DIR:z_generals>/discord-rpc.dll"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${CMAKE_CURRENT_SOURCE_DIR}/../GameEngine/Source/GameNetwork/GeneralsOnline/Vendor/DiscordRPC/LICENSE.txt"
+			"$<TARGET_FILE_DIR:z_generals>/discord-rpc-LICENSE.txt"
+	)
+endif()
+
+# RC files optional for MinGW builds
+# Icon: LoadIcon() handles missing resource gracefully (uses default system icon)
+# Manifest: DPI awareness metadata (nice to have but not essential)
+if(MSVC)
+    # VS2005 and later adds default manifest, we need to turn it off to prevent conflict with custom manifest
+    if(NOT IS_VS6_BUILD)
+        target_link_options(z_generals PRIVATE
+            "/MANIFEST:NO"
+        )
+    endif()
+
+    target_sources(z_generals PRIVATE
+        RTS.RC
+    )
+endif()
+
+# Strip debug symbols to separate file for MinGW Release builds
+# This creates generalszh${RTS_BUILD_OUTPUT_SUFFIX}.exe.debug (similar to MSVC .pdb files)
+if(MINGW AND COMMAND add_debug_strip_target)
+    add_debug_strip_target(z_generals)
+endif()
+
+if(APPLE)
+    set_target_properties(z_generals PROPERTIES
+        WIN32_EXECUTABLE FALSE
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.playgenerals.online"
+        MACOSX_BUNDLE_BUNDLE_NAME "GeneralsOnlineZH"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.4.0"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Platform/MacOS/Info.plist.in"
+    )
+
+    # Remove Windows-only link libraries, add macOS frameworks
+    set_property(TARGET z_generals PROPERTY LINK_LIBRARIES)
+    target_link_libraries(z_generals PRIVATE
+        z_gameengine
+        z_gameenginedevice
+        zi_always
+        "-framework Metal"
+        "-framework MetalKit"
+        "-framework AppKit"
+        "-framework QuartzCore"
+        "-framework CoreGraphics"
+        "-framework IOKit"
+    )
+
+    # Replace WinMain with macOS entry point
+    get_target_property(_sources z_generals SOURCES)
+    list(REMOVE_ITEM _sources WinMain.cpp WinMain.h)
+    set_property(TARGET z_generals PROPERTY SOURCES ${_sources})
+
+    target_sources(z_generals PRIVATE
+        ${CMAKE_SOURCE_DIR}/Platform/MacOS/Source/Main/MacOSMain.mm
+        ${METAL_BUNDLE_RESOURCE}
+    )
+
+    set_source_files_properties(${METAL_BUNDLE_RESOURCE} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+
+    # d3d8.h proxies and Win32 stubs
+    target_include_directories(z_generals BEFORE PRIVATE
+        ${CMAKE_SOURCE_DIR}/Platform/MacOS/Include
+    )
+
+    target_link_libraries(z_generals PRIVATE macos_platform)
+    macos_platform_add_game_glue(z_generals)
+    add_dependencies(z_generals metal_shaders)
+
+    # EAC/EOS: @rpath must include Frameworks/ so dlopen(easyanticheat.dylib)
+    # can resolve its @rpath/libEOSSDK-Mac-Shipping.dylib dependency at runtime.
+    set_target_properties(z_generals PROPERTIES
+        BUILD_RPATH "@executable_path/../Frameworks;${CMAKE_BINARY_DIR}/eac_plugin"
+    )
+
+    # EAC Plugin (Private Submodule)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/Dependencies/eac_plugin/CMakeLists.txt")
+        add_subdirectory("${CMAKE_SOURCE_DIR}/Dependencies/eac_plugin" "${CMAKE_BINARY_DIR}/eac_plugin")
+
+        # Copy EOS SDK to the game bundle
+        add_custom_command(TARGET z_generals POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:z_generals>/Contents/Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/Dependencies/eac_plugin/EOS-SDK/SDK/Bin/libEOSSDK-Mac-Shipping.dylib" "$<TARGET_BUNDLE_DIR:z_generals>/Contents/Frameworks/"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:z_generals>/plugins/easyanticheat"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:easyanticheat>" "$<TARGET_FILE_DIR:z_generals>/plugins/easyanticheat/"
+        )
+    else()
+        message(STATUS "EAC Plugin source not found (private repo). Skipping plugin build.")
+    endif()
+endif()

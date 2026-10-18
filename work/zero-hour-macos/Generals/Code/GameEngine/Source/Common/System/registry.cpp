@@ -1,0 +1,285 @@
+/*
+**	Command & Conquer Generals(tm)
+**	Copyright 2025 Electronic Arts Inc.
+**
+**	This program is free software: you can redistribute it and/or modify
+**	it under the terms of the GNU General Public License as published by
+**	the Free Software Foundation, either version 3 of the License, or
+**	(at your option) any later version.
+**
+**	This program is distributed in the hope that it will be useful,
+**	but WITHOUT ANY WARRANTY; without even the implied warranty of
+**	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+**	GNU General Public License for more details.
+**
+**	You should have received a copy of the GNU General Public License
+**	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+////////////////////////////////////////////////////////////////////////////////
+//																																						//
+//  (c) 2001-2003 Electronic Arts Inc.																				//
+//																																						//
+////////////////////////////////////////////////////////////////////////////////
+
+// Registry.cpp
+// Simple interface for storing/retrieving registry values
+// Author: Matthew D. Campbell, December 2001
+
+#include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+
+#include "Common/Registry.h"
+
+
+#ifndef __APPLE__
+
+Bool  getStringFromRegistry(HKEY root, AsciiString path, AsciiString key, AsciiString& val)
+{
+	HKEY handle;
+	unsigned char buffer[256];
+	unsigned long size = 256;
+	unsigned long type;
+	int returnValue;
+
+	if ((returnValue = RegOpenKeyEx( root, path.str(), 0, KEY_READ, &handle )) == ERROR_SUCCESS)
+	{
+		returnValue = RegQueryValueEx(handle, key.str(), nullptr, &type, (unsigned char *) &buffer, &size);
+		RegCloseKey( handle );
+	}
+
+	if (returnValue == ERROR_SUCCESS)
+	{
+		val = (char *)buffer;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+Bool getUnsignedIntFromRegistry(HKEY root, AsciiString path, AsciiString key, UnsignedInt& val)
+{
+	HKEY handle;
+	unsigned char buffer[4];
+	unsigned long size = 4;
+	unsigned long type;
+	int returnValue;
+
+	if ((returnValue = RegOpenKeyEx( root, path.str(), 0, KEY_READ, &handle )) == ERROR_SUCCESS)
+	{
+		returnValue = RegQueryValueEx(handle, key.str(), nullptr, &type, (unsigned char *) &buffer, &size);
+		RegCloseKey( handle );
+	}
+
+	if (returnValue == ERROR_SUCCESS)
+	{
+		val = *(UnsignedInt *)buffer;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+Bool setStringInRegistry( HKEY root, AsciiString path, AsciiString key, AsciiString val)
+{
+	HKEY handle;
+	unsigned long type;
+	unsigned long returnValue;
+	int size;
+	char lpClass[] = "REG_NONE";
+
+	if ((returnValue = RegCreateKeyEx( root, path.str(), 0, lpClass, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &handle, nullptr )) == ERROR_SUCCESS)
+	{
+		type = REG_SZ;
+		size = val.getLength()+1;
+		returnValue = RegSetValueEx(handle, key.str(), 0, type, (unsigned char *)val.str(), size);
+		RegCloseKey( handle );
+	}
+
+	return (returnValue == ERROR_SUCCESS);
+}
+
+Bool setUnsignedIntInRegistry( HKEY root, AsciiString path, AsciiString key, UnsignedInt val)
+{
+	HKEY handle;
+	unsigned long type;
+	unsigned long returnValue;
+	int size;
+	char lpClass[] = "REG_NONE";
+
+	if ((returnValue = RegCreateKeyEx( root, path.str(), 0, lpClass, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &handle, nullptr )) == ERROR_SUCCESS)
+	{
+		type = REG_DWORD;
+		size = 4;
+		returnValue = RegSetValueEx(handle, key.str(), 0, type, (unsigned char *)&val, size);
+		RegCloseKey( handle );
+	}
+
+	return (returnValue == ERROR_SUCCESS);
+}
+
+#else // __APPLE__
+
+#include <stdlib.h>
+
+Bool getStringFromRegistry(HKEY, AsciiString path, AsciiString key, AsciiString& val)
+{
+	if (key.compareNoCase("InstallPath") == 0)
+	{
+		const char* envPath = getenv("GENERALS_BASE_INSTALL_PATH");
+		if (envPath)
+		{
+			val = envPath;
+			return TRUE;
+		}
+	}
+	else if (key.compareNoCase("Language") == 0)
+	{
+		// TheSuperHackers @feature Allow portable user data without changing the user's HOME.
+    const char* home = getenv("GENERALS_USER_DATA_ROOT");
+    if (!home || !*home) home = getenv("HOME");
+		if (home)
+		{
+			char iniPath[512];
+			snprintf(iniPath, sizeof(iniPath),
+				"%s/Command and Conquer Generals Data/Options.ini", home);
+
+			FILE* fp = fopen(iniPath, "r");
+			if (fp)
+			{
+				char line[256];
+				while (fgets(line, sizeof(line), fp))
+				{
+					char* eq = strchr(line, '=');
+					if (!eq) continue;
+
+					*eq = '\0';
+					char* k = line;
+					while (*k == ' ' || *k == '\t') k++;
+					char* kEnd = k + strlen(k) - 1;
+					while (kEnd > k && (*kEnd == ' ' || *kEnd == '\t')) *kEnd-- = '\0';
+
+					if (strcasecmp(k, "Language") != 0) continue;
+
+					char* v = eq + 1;
+					while (*v == ' ' || *v == '\t') v++;
+					char* vEnd = v + strlen(v) - 1;
+					while (vEnd > v && (*vEnd == '\n' || *vEnd == '\r' || *vEnd == ' ')) *vEnd-- = '\0';
+
+					if (*v)
+					{
+						val = v;
+						fclose(fp);
+						return TRUE;
+					}
+				}
+				fclose(fp);
+			}
+		}
+
+		val = "english";
+		return TRUE;
+	}
+	return FALSE;
+}
+
+Bool getUnsignedIntFromRegistry(HKEY, AsciiString, AsciiString, UnsignedInt&)
+{
+	return FALSE;
+}
+
+Bool setStringInRegistry(HKEY, AsciiString, AsciiString, AsciiString)
+{
+	return TRUE;
+}
+
+Bool setUnsignedIntInRegistry(HKEY, AsciiString, AsciiString, UnsignedInt)
+{
+	return TRUE;
+}
+
+#endif // !__APPLE__
+Bool GetStringFromGeneralsRegistry(AsciiString path, AsciiString key, AsciiString& val)
+{
+	AsciiString fullPath = "SOFTWARE\\Electronic Arts\\EA Games\\Generals";
+
+	fullPath.concat(path);
+	DEBUG_LOG(("GetStringFromRegistry - looking in %s for key %s", fullPath.str(), key.str()));
+	if (getStringFromRegistry(HKEY_CURRENT_USER, fullPath.str(), key.str(), val))
+	{
+		return TRUE;
+	}
+
+	return getStringFromRegistry(HKEY_LOCAL_MACHINE, fullPath.str(), key.str(), val);
+}
+
+Bool GetStringFromRegistry(AsciiString path, AsciiString key, AsciiString& val)
+{
+#if RTS_GENERALS
+	AsciiString fullPath = "SOFTWARE\\Electronic Arts\\EA Games\\Generals";
+#elif RTS_ZEROHOUR
+	AsciiString fullPath = "SOFTWARE\\Electronic Arts\\EA Games\\Command and Conquer Generals Zero Hour";
+#endif
+
+	fullPath.concat(path);
+	DEBUG_LOG(("GetStringFromRegistry - looking in %s for key %s", fullPath.str(), key.str()));
+	if (getStringFromRegistry(HKEY_LOCAL_MACHINE, fullPath.str(), key.str(), val))
+	{
+		return TRUE;
+	}
+
+	return getStringFromRegistry(HKEY_CURRENT_USER, fullPath.str(), key.str(), val);
+}
+
+Bool GetUnsignedIntFromRegistry(AsciiString path, AsciiString key, UnsignedInt& val)
+{
+#if RTS_GENERALS
+	AsciiString fullPath = "SOFTWARE\\Electronic Arts\\EA Games\\Generals";
+#elif RTS_ZEROHOUR
+	AsciiString fullPath = "SOFTWARE\\Electronic Arts\\EA Games\\Command and Conquer Generals Zero Hour";
+#endif
+
+	fullPath.concat(path);
+	DEBUG_LOG(("GetUnsignedIntFromRegistry - looking in %s for key %s", fullPath.str(), key.str()));
+	if (getUnsignedIntFromRegistry(HKEY_CURRENT_USER, fullPath.str(), key.str(), val))
+	{
+		return TRUE;
+	}
+
+	return getUnsignedIntFromRegistry(HKEY_LOCAL_MACHINE, fullPath.str(), key.str(), val);
+}
+
+AsciiString GetRegistryLanguage()
+{
+	static Bool cached = FALSE;
+	// NOTE: static causes a memory leak, but we have to keep it because the value is cached.
+	static AsciiString val = "english";
+	if (cached) {
+		return val;
+	} else {
+		cached = TRUE;
+	}
+
+	GetStringFromRegistry("", "Language", val);
+	return val;
+}
+
+AsciiString GetRegistryGameName()
+{
+	AsciiString val = "GeneralsMPTest";
+	GetStringFromRegistry("", "SKU", val);
+	return val;
+}
+
+UnsignedInt GetRegistryVersion()
+{
+	UnsignedInt val = 65536;
+	GetUnsignedIntFromRegistry("", "Version", val);
+	return val;
+}
+
+UnsignedInt GetRegistryMapPackVersion()
+{
+	UnsignedInt val = 65536;
+	GetUnsignedIntFromRegistry("", "MapPackVersion", val);
+	return val;
+}

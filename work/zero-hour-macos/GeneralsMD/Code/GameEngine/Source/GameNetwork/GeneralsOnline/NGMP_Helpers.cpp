@@ -1,0 +1,472 @@
+#include "GameNetwork/GeneralsOnline/NGMP_include.h"
+#include <chrono>
+#include <cwctype>
+#include <ctime>
+#include <mutex>
+#include <string>
+#include <locale>
+#include <codecvt>
+#include "../OnlineServices_Init.h"
+#include "../OnlineServices_Auth.h"
+#include "Common/System/NativeFileSystem.h"
+
+const char* GetHTTPVersionName(long curlHTTPVersion)
+{
+	switch (curlHTTPVersion)
+	{
+		case CURL_HTTP_VERSION_NONE: return "auto";
+		case CURL_HTTP_VERSION_1_0: return "1.0";
+		case CURL_HTTP_VERSION_1_1: return "1.1";
+		case CURL_HTTP_VERSION_2_0: return "2";
+		case CURL_HTTP_VERSION_3: return "3";
+	}
+
+	return "unknown";
+}
+
+std::string m_strNetworkLogFileName;
+std::mutex m_logMutex;
+
+extern NGMPGame* TheNGMPGame;
+
+std::string to_utf8(const std::wstring& wstr)
+{
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	return converter.to_bytes(wstr);
+}
+
+std::wstring from_utf8(const std::string& utf8_str)
+{
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	std::wstring result = converter.from_bytes(utf8_str);
+	// DEBUG_INFO_MAC(("from_utf8 input='%s' (len %zu) -> output wlen=%zu", utf8_str.c_str(), utf8_str.length(), result.length()));
+	// if (result.length() > 0) {
+	// 	DEBUG_INFO_MAC(("from_utf8 first char: 0x%X", (unsigned int)result[0]));
+	// }
+	return result;
+}
+
+std::wstring NormalizeSingleLineText(const std::wstring& text)
+{
+	std::wstring normalizedText;
+	normalizedText.reserve(text.size());
+	bool pendingSpace = false;
+
+	for (wchar_t character : text)
+	{
+		if (std::iswspace(character) || std::iswcntrl(character))
+		{
+			pendingSpace = !normalizedText.empty();
+			continue;
+		}
+
+		if (pendingSpace)
+		{
+			normalizedText += L' ';
+			pendingSpace = false;
+		}
+		normalizedText += character;
+	}
+
+	return normalizedText;
+}
+
+void NetworkLog(ELogVerbosity logVerbosity, const char* fmt, ...)
+{
+	if (!NGMP_OnlineServicesManager::Settings.Debug_VerboseLogging())
+	{
+		if (logVerbosity < g_LogVerbosity)
+		{
+			return;
+		}
+	}
+
+	std::scoped_lock scopedLock { m_logMutex };
+
+	if (m_strNetworkLogFileName.empty())
+	{
+		auto now = std::chrono::system_clock::now();
+		auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+#if defined(_DEBUG)
+		// for debug, put the user ID in the log name so we can easily track it (NOte that this does mean we dont get very early logging, pre login, but that's OK normally)
+
+		NGMP_OnlineServices_AuthInterface* pAuthInterface = NGMP_OnlineServicesManager::GetInterface<NGMP_OnlineServices_AuthInterface>();
+		if (pAuthInterface != nullptr && pAuthInterface->GetUserID() != -1)
+		{
+			m_strNetworkLogFileName = std::format("{}\\GeneralsOnlineData\\GeneralsOnline_UserID_{}.log", TheGlobalData->getPath_UserData().str(), pAuthInterface->GetUserID());
+		}
+		else
+		{
+			return;
+		}
+#else
+		m_strNetworkLogFileName = std::format("{}\\GeneralsOnlineData\\GeneralsOnline.log", TheGlobalData->getPath_UserData().str());
+#endif
+		/*
+			std::stringstream ss;
+
+#if defined(_DEBUG)
+		if (IsDebuggerPresent())
+		{
+			ss << std::put_time(std::localtime(&in_time_t),
+				"GeneralsOnline_Debugger_%Y-%m-%d-%H-%M-%S.log");
+		}
+		else
+		{
+			ss << std::put_time(std::localtime(&in_time_t),
+				"GeneralsOnline_%Y-%m-%d-%H-%M-%S.log");
+		}
+#else
+		ss << "GeneralsOnline.log";
+#endif
+*/
+		// Path keeps engine backslashes; NativeFileSystem translates \ -> / at the Apple boundary.
+		// Do not switch to raw std::ofstream here, or the backslashes leak into the filename.
+		FILE* overwriteFile = NativeFileSystem::fopen(m_strNetworkLogFileName, "wb");
+		if (overwriteFile)
+		{
+			struct tm startTm = {};
+#ifdef __APPLE__
+			localtime_r(&in_time_t, &startTm);
+#else
+			localtime_s(&startTm, &in_time_t);
+#endif
+			char startLine[64];
+			size_t startLen = strftime(startLine, sizeof(startLine), "Log Started at %Y/%m/%d %H:%M\n", &startTm);
+			fwrite(startLine, 1, startLen, overwriteFile);
+			fclose(overwriteFile);
+		}
+	}
+
+	auto const rawNow = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	struct tm localNow = {};
+#ifdef __APPLE__
+	localtime_r(&rawNow, &localNow);
+#else
+	localtime_s(&localNow, &rawNow);
+#endif
+	char timebuf[32];
+	strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", &localNow);
+
+	char buffer[8192];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffer, 8192, fmt, args);
+	buffer[8192 - 1] = 0;
+	va_end(args);
+
+	const char* szTimestamp = timebuf;
+	const char* szMessage = buffer;
+
+	std::string strLogBuffer = std::format("[{}] {}", szTimestamp, szMessage);
+
+	// TODO_NGMP: Keep open and flush regularly
+	FILE* logFile = NativeFileSystem::fopen(m_strNetworkLogFileName, "ab");
+	if (logFile)
+	{
+		fwrite(strLogBuffer.data(), 1, strLogBuffer.size(), logFile);
+		fputc('\n', logFile);
+		fclose(logFile);
+	}
+
+#if defined(GENERALS_ONLINE_BRANCH_JMARSHALL)
+	DevConsole.AddLog(strLogBuffer.c_str());
+#endif
+
+#ifdef __APPLE__
+#ifdef DEBUG_NETWORK_MAC_FLAG
+	printf("[NetworkLog] %s\n", strLogBuffer.c_str());
+	fflush(stdout);
+#endif
+#else
+	OutputDebugString(strLogBuffer.c_str());
+	OutputDebugString("\n");
+#endif
+}
+
+std::string Base64Encode(const std::vector<uint8_t>& data)
+{
+	static const char base64_chars[] =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz"
+		"0123456789+/";
+
+	std::string encoded;
+	size_t i = 0;
+	uint32_t octet_a, octet_b, octet_c, triple;
+
+	while (i < data.size())
+	{
+		octet_a = i < data.size() ? data[i++] : 0;
+		octet_b = i < data.size() ? data[i++] : 0;
+		octet_c = i < data.size() ? data[i++] : 0;
+
+		triple = (octet_a << 16) | (octet_b << 8) | octet_c;
+
+		encoded += base64_chars[(triple >> 18) & 0x3F];
+		encoded += base64_chars[(triple >> 12) & 0x3F];
+		encoded += (i >= data.size() + 1) ? '=' : base64_chars[(triple >> 6) & 0x3F];
+		encoded += (i >= data.size())     ? '=' : base64_chars[triple & 0x3F];
+	}
+
+	return encoded;
+}
+
+std::vector<uint8_t> Base64Decode(const std::string& encodedData) {
+	static const std::string base64Chars =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz"
+		"0123456789+/";
+
+	auto isBase64 = [](unsigned char c) {
+		return std::isalnum(c) || (c == '+') || (c == '/');
+		};
+
+	std::vector<uint8_t> decodedData;
+	int inLen = encodedData.size();
+	int i = 0;
+	int in_ = 0;
+	uint8_t charArray4[4], charArray3[3];
+
+	while (inLen-- && (encodedData[in_] != '=') && isBase64(encodedData[in_])) {
+		if (i >= 4) break;
+		charArray4[i++] = encodedData[in_]; in_++;
+		if (i == 4) {
+			for (i = 0; i < 4; i++)
+				charArray4[i] = base64Chars.find(charArray4[i]);
+
+			charArray3[0] = (charArray4[0] << 2) + ((charArray4[1] & 0x30) >> 4);
+			charArray3[1] = ((charArray4[1] & 0xf) << 4) + ((charArray4[2] & 0x3c) >> 2);
+			charArray3[2] = ((charArray4[2] & 0x3) << 6) + charArray4[3];
+
+			for (i = 0; i < 3; i++)
+				decodedData.push_back(charArray3[i]);
+			i = 0;
+		}
+	}
+
+	if (i) {
+		for (int j = i; j < 4; j++)
+			charArray4[j] = 0;
+
+		for (int j = 0; j < 4; j++)
+			charArray4[j] = base64Chars.find(charArray4[j]);
+
+		charArray3[0] = (charArray4[0] << 2) + ((charArray4[1] & 0x30) >> 4);
+		charArray3[1] = ((charArray4[1] & 0xf) << 4) + ((charArray4[2] & 0x3c) >> 2);
+		charArray3[2] = ((charArray4[2] & 0x3) << 6) + charArray4[3];
+
+		for (int j = 0; j < i - 1; j++)
+			decodedData.push_back(charArray3[j]);
+	}
+
+	return decodedData;
+}
+
+std::string getGameExeCRC()
+{
+#ifdef __APPLE__
+    // TODO(PS_PATH): there is no PE .text section on macOS. The executable CRC is
+    // already resolved through the VersionManifest endpoint in OnlineServices_Init.
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%u", TheGlobalData->m_exeCRC);
+    return std::string(buf);
+#else
+    HMODULE hModule = GetModuleHandle(NULL);
+    if (!hModule) return "";
+
+    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)hModule;
+    PIMAGE_NT_HEADERS ntHeader = (PIMAGE_NT_HEADERS)((BYTE*)hModule + dosHeader->e_lfanew);
+
+    PIMAGE_SECTION_HEADER section = IMAGE_FIRST_SECTION(ntHeader);
+    for (int i = 0; i < ntHeader->FileHeader.NumberOfSections; i++, section++) {
+        if (strcmp((char*)section->Name, ".text") == 0) {
+            BYTE* codeBase = (BYTE*)hModule + section->VirtualAddress;
+            DWORD codeSize = section->Misc.VirtualSize;
+
+            HCRYPTPROV hProv;
+            HCRYPTHASH hHash;
+            BYTE hash[32]; // SHA-256
+            DWORD hashLen = sizeof(hash);
+
+            if (CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) &&
+                CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash) &&
+                CryptHashData(hHash, codeBase, codeSize, 0) &&
+                CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
+
+                std::ostringstream oss;
+                oss << std::hex << std::setfill('0');
+                for (DWORD j = 0; j < hashLen; j++) {
+                    oss << std::setw(2) << static_cast<int>(hash[j]);
+                }
+
+                CryptDestroyHash(hHash);
+                CryptReleaseContext(hProv, 0);
+
+                return oss.str(); // return as std::string
+            }
+
+            CryptDestroyHash(hHash);
+            CryptReleaseContext(hProv, 0);
+        }
+    }
+    return "";
+#endif
+}
+
+int RoundUpLatencyToFrameInterval(int latency, int frameInterval)
+{
+	if (frameInterval == 0)
+		return latency;
+
+	int remainder = latency % frameInterval;
+	if (remainder == 0)
+		return latency;
+
+	return latency + frameInterval - remainder;
+}
+int ConvertMSLatencyToFrames(int ms)
+{
+	ms = RoundUpLatencyToFrameInterval(ms, 1000 / GENERALS_ONLINE_HIGH_FPS_LIMIT);
+	return (int)ceil((ms / 1000.f) * (float)GENERALS_ONLINE_HIGH_FPS_LIMIT);
+}
+
+int ConvertMSLatencyToGenToolFrames(int ms)
+{
+	return (int)ceil((float)ConvertMSLatencyToFrames(ms) / (float)GENERALS_ONLINE_HIGH_FPS_FRAME_MULTIPLIER);
+}
+
+#include <windows.h>
+#ifndef __APPLE__
+#include <iphlpapi.h>
+#endif
+#include <iostream>
+#include <string>
+
+#pragma comment(lib, "iphlpapi.lib")
+
+#ifdef __APPLE__
+
+#include <ifaddrs.h>
+#include <net/if_dl.h>
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <unistd.h>
+#include <uuid/uuid.h>
+
+std::string GetMachineGuid() {
+	// TODO(PS_PATH): gethostuuid avoids pulling CoreFoundation in, whose MacTypes.h
+	// redefines the engine UInt8 typedef.
+	uuid_t hostID;
+	const struct timespec wait = { 5, 0 };
+	if (gethostuuid(hostID, &wait) != 0)
+		return "";
+
+	char text[37] = {};
+	uuid_unparse_lower(hostID, text);
+	return std::string(text);
+}
+
+std::string GetPrimaryMacAddress() {
+	struct ifaddrs *addrs = nullptr;
+	if (getifaddrs(&addrs) != 0)
+		return "";
+
+	std::string result;
+	for (struct ifaddrs *it = addrs; it != nullptr; it = it->ifa_next)
+	{
+		if (it->ifa_addr == nullptr || it->ifa_addr->sa_family != AF_LINK)
+			continue;
+
+		if (strncmp(it->ifa_name, "en", 2) != 0)
+			continue;
+
+		const struct sockaddr_dl *link = (const struct sockaddr_dl *)it->ifa_addr;
+		if (link->sdl_alen != 6)
+			continue;
+
+		const unsigned char *mac = (const unsigned char *)LLADDR(link);
+		char buf[32];
+		snprintf(buf, sizeof(buf), "%02X-%02X-%02X-%02X-%02X-%02X",
+			mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+		result = buf;
+		break;
+	}
+
+	freeifaddrs(addrs);
+	return result;
+}
+
+std::string GetVolumeSerial() {
+	struct statfs info;
+	if (statfs("/", &info) != 0)
+		return "";
+
+	char buf[32];
+	snprintf(buf, sizeof(buf), "%08XZZ", (unsigned int)(info.f_fsid.val[0] ^ info.f_fsid.val[1]));
+	return std::string(buf);
+}
+
+#else
+
+// Helper: read MachineGuid from registry
+std::string GetMachineGuid() {
+    HKEY hKey;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
+        "SOFTWARE\\Microsoft\\Cryptography",
+        0, KEY_READ | KEY_WOW64_64KEY, &hKey) != ERROR_SUCCESS) {
+        return "";
+    }
+
+    char buffer[256];
+    DWORD bufferSize = sizeof(buffer);
+    DWORD type = 0;
+    if (RegQueryValueExA(hKey, "MachineGuid", nullptr, &type,
+        reinterpret_cast<LPBYTE>(buffer), &bufferSize) == ERROR_SUCCESS) {
+        RegCloseKey(hKey);
+        return std::string(buffer, bufferSize - 1).append(std::string("YY")); // remove null terminator
+    }
+
+    RegCloseKey(hKey);
+    return "";
+}
+
+// Helper: get MAC address of first adapter
+std::string GetPrimaryMacAddress() {
+    PIP_ADAPTER_INFO adapterInfo;
+    DWORD bufLen = sizeof(IP_ADAPTER_INFO);
+    adapterInfo = (IP_ADAPTER_INFO*)malloc(bufLen);
+
+    if (GetAdaptersInfo(adapterInfo, &bufLen) == ERROR_BUFFER_OVERFLOW) {
+        free(adapterInfo);
+        adapterInfo = (IP_ADAPTER_INFO*)malloc(bufLen);
+    }
+
+    if (GetAdaptersInfo(adapterInfo, &bufLen) == NO_ERROR) {
+        char macAddr[32];
+        sprintf_s(macAddr, "%02X:%02X:%02X:%02X:%02X:%02XZZ",
+            adapterInfo->Address[0], adapterInfo->Address[1],
+            adapterInfo->Address[2], adapterInfo->Address[3],
+            adapterInfo->Address[4], adapterInfo->Address[5]);
+        free(adapterInfo);
+        return std::string(macAddr);
+    }
+
+    free(adapterInfo);
+    return "";
+}
+
+// Helper: get Volume Serial Number of C: drive
+std::string GetVolumeSerial() {
+    DWORD serialNumber = 0;
+    if (GetVolumeInformationA("C:\\", nullptr, 0, &serialNumber,
+        nullptr, nullptr, nullptr, 0)) {
+        char serialStr[32];
+        sprintf_s(serialStr, "%08XZZ", serialNumber);
+        return std::string(serialStr);
+    }
+    return "";
+}
+
+#endif // __APPLE__

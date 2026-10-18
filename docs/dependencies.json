@@ -1,0 +1,33 @@
+{
+  "curl-src": {
+    "source": "archive; see matching client CMake recipe for URL/version/hash"
+  },
+  "protobuf_static-src": {
+    "source": "archive; see matching client CMake recipe for URL/version/hash"
+  },
+  "ffmpeg_bink-src": {
+    "source": "archive; see matching client CMake recipe for URL/version/hash"
+  },
+  "gamemath-src": {
+    "commit": "59f7ccd494f7e7c916a784ac26ef266f9f09d78d",
+    "remote": "https://github.com/TheSuperHackers/GameMath.git"
+  },
+  "stb-src": {
+    "commit": "5c205738c191bcb0abc65c4febfa9bd25ff35234",
+    "remote": "https://github.com/TheSuperHackers/stb.git"
+  },
+  "gamenetworkingsockets-src": {
+    "commit": "d534c19aa760df3fb75fd20db13ba1932b8a5463",
+    "remote": "https://github.com/ValveSoftware/GameNetworkingSockets.git"
+  },
+  "openssl_static-src": {
+    "source": "archive; see matching client CMake recipe for URL/version/hash"
+  },
+  "gamespy-src": {
+    "commit": "07e3d15c500415abc281efb74322ab6d9c857eb8",
+    "remote": "https://github.com/TheSuperHackers/GamespySDK.git"
+  },
+  "lzhl-src": {
+    "source": "archive; see matching client CMake recipe for URL/version/hash"
+  }
+}
