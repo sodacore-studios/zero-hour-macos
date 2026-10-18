@@ -57,9 +57,11 @@ public:
 	Bool isTimeFrozen() const;
 	Bool isGameHalted() const;
 
-	void setLogicTimeScaleFps( Int fps ); ///< Set the logic time scale fps and therefore scale the simulation time. Is capped by the max render fps and does not apply to network matches.
+	void setSkirmishGameSpeed(Int sliderValue); ///< Historic slider units: 30 is normal speed; 1000 is unlimited. Zero resets the match default.
+
+	void setLogicTimeScaleFps( Int fps ); ///< Set the logic time scale fps and therefore scale the simulation time. Does not apply to network matches; macOS schedules independently of render FPS.
 	Int  getLogicTimeScaleFps() const; ///< Get the raw logic time scale fps value.
-	void enableLogicTimeScale( Bool enable ); ///< Enable or disable the logic time scale setup. If disabled, the simulation time scale is bound to the render frame time or network update time.
+	void enableLogicTimeScale( Bool enable ); ///< Enable or disable the logic time scale setup. If disabled, macOS uses the local match rate; network matches use network timing.
 	Bool isLogicTimeScaleEnabled() const; ///< Check whether the logic time scale setup is enabled.
 	Int  getActualLogicTimeScaleFps(LogicTimeQueryFlags flags = 0) const; ///< Get the real logic time scale fps, depending on the max render fps, network state and enabled state.
 	Real getActualLogicTimeScaleRatio(LogicTimeQueryFlags flags = 0) const; ///< Get the real logic time scale ratio, depending on the max render fps, network state and enabled state.
@@ -72,6 +74,7 @@ protected:
 	FrameRateLimit m_frameRateLimit;
 
 	Int m_maxFPS; ///< Maximum frames per second for rendering
+	Int m_skirmishLogicFPS; ///< Local match rate, independent of rendering and network pacing.
 	Int m_logicTimeScaleFPS; ///< Maximum frames per second for logic time scale
 
 	Real m_updateTime; ///< Last update delta time in seconds

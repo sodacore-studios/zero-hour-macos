@@ -21,3 +21,15 @@ LLVM_PROFILE_FILE="$output/coverage.profraw" "$output/fixed-step-tests"
 "${cov[@]}" show "$output/fixed-step-tests" -instr-profile="$output/coverage.profdata" \
   -format=html -output-dir="$output/html" \
   "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/FixedStepBudget.h"
+
+# Compile the real macOS pacing implementation; only external game/platform services are stubbed.
+"${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -D__APPLE__ -fprofile-instr-generate -fcoverage-mapping \
+  -I "$root/work/performance-tests/stubs" \
+  -I "$root/work/zero-hour-macos/Core/GameEngine/Include" \
+  "$root/work/performance-tests/game_speed_test.cpp" \
+  "$root/work/zero-hour-macos/Core/GameEngine/Source/Common/FramePacer.cpp" -o "$output/game-speed-tests"
+LLVM_PROFILE_FILE="$output/game-speed.profraw" "$output/game-speed-tests"
+"${profdata[@]}" merge -sparse "$output/game-speed.profraw" -o "$output/game-speed.profdata"
+"${cov[@]}" show "$output/game-speed-tests" -instr-profile="$output/game-speed.profdata" \
+  -format=html -output-dir="$output/html/game-speed" \
+  "$root/work/zero-hour-macos/Core/GameEngine/Source/Common/FramePacer.cpp"

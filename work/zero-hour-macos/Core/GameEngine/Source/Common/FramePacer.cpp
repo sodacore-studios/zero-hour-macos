@@ -36,6 +36,7 @@ FramePacer::FramePacer()
 	timeBeginPeriod(1);
 
 	m_maxFPS = BaseFps;
+	m_skirmishLogicFPS = LOGICFRAMES_PER_SECOND;
 	m_logicTimeScaleFPS = LOGICFRAMES_PER_SECOND;
 	m_updateTime = 1.0f / (Real)BaseFps; // initialized to something to avoid division by zero on first use
 	m_enableFpsLimit = FALSE;
@@ -162,6 +163,16 @@ Bool FramePacer::isGameHalted() const
 	return m_isGameHalted;
 }
 
+void FramePacer::setSkirmishGameSpeed(Int sliderValue)
+{
+    // The original slider measures 30-Hz game speed, even in the 60-Hz build.
+    // Reset on every match so a slow skirmish cannot affect a campaign/replay.
+    m_skirmishLogicFPS = sliderValue == 1000 ? RenderFpsPreset::UncappedFpsValue :
+        (sliderValue >= 15 && sliderValue <= 60 ?
+            sliderValue * LOGICFRAMES_PER_SECOND / BaseFps : LOGICFRAMES_PER_SECOND);
+    enableLogicTimeScale(FALSE);
+}
+
 void FramePacer::setLogicTimeScaleFps( Int fps )
 {
 	m_logicTimeScaleFPS = fps;
@@ -205,7 +216,7 @@ Int FramePacer::getActualLogicTimeScaleFps(LogicTimeQueryFlags flags) const
 	}
 
 	#ifdef __APPLE__
-    return getenv("ZERO_HOUR_PERF_LEGACY_PACING") ? RenderFpsPreset::UncappedFpsValue : LOGICFRAMES_PER_SECOND;
+    return getenv("ZERO_HOUR_PERF_LEGACY_PACING") ? RenderFpsPreset::UncappedFpsValue : m_skirmishLogicFPS;
 #else
     // Original platforms retain their existing render-bound scheduling.
     return RenderFpsPreset::UncappedFpsValue;

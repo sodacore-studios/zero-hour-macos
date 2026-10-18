@@ -1050,8 +1050,7 @@ void GameEngine::update()
         std::chrono::duration<double>(perfStart - m_logicWallTime).count();
     m_logicWallTime = perfStart;
     if (TheNetwork == nullptr && TheGameLogic->isInGame() && !isTimeFrozen() && !isGameHalted()) {
-        const double hz = TheFramePacer->isLogicTimeScaleEnabled() ?
-            TheFramePacer->getLogicTimeScaleFps() : LOGICFRAMES_PER_SECOND;
+        const double hz = TheFramePacer->getActualLogicTimeScaleFps();
         m_pendingLogicSteps = m_fixedStepBudget.advance(elapsed, hz);
     } else {
         m_fixedStepBudget.reset();

@@ -317,6 +317,9 @@ void GameLogic::clearGameData( Bool showScoreScreen )
 // ------------------------------------------------------------------------------------------------
 void GameLogic::prepareNewGame( GameMode gameMode, GameDifficulty diff, Int rankPoints )
 {
+#ifdef __APPLE__
+	TheFramePacer->setSkirmishGameSpeed(0);
+#endif
 	//Kris: Commented this out, but leaving it around incase it bites us later. I cleaned up the
 	//      nomenclature. Look for setLoadingMap() and setLoadingSave()
 	//setGameLoading(TRUE);
@@ -877,18 +880,23 @@ bool GameLogic::onNewGame(MAYBE_UNUSED GameMessage *msg)
 	if ( msg->getArgumentCount() >= 3 )
 		rankPoints = msg->getArgument( 2 )->integer;
 
+	// Prepare before applying the optional local speed; this resets prior match settings.
+	prepareNewGame( gameMode, diff, rankPoints );
+
 	if ( msg->getArgumentCount() >= 4 )
 	{
 		Int maxFPS = msg->getArgument( 3 )->integer;
 		if (maxFPS < 1 || maxFPS > 1000)
 			maxFPS = TheGlobalData->m_framesPerSecondLimit;
+#ifdef __APPLE__
+        if (gameMode == GAME_SKIRMISH || gameMode == GAME_SINGLE_PLAYER)
+            TheFramePacer->setSkirmishGameSpeed(maxFPS);
+#else
 		DEBUG_LOG(("Setting max FPS limit to %d FPS", maxFPS));
 		TheFramePacer->setFramesPerSecondLimit(maxFPS);
 		TheWritableGlobalData->m_useFpsLimit = true;
+#endif
 	}
-
-	// prepare for new game
-	prepareNewGame( gameMode, diff, rankPoints );
 
 	// start new game
 	startNewGame( FALSE );
