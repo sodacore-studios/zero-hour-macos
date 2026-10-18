@@ -124,3 +124,5 @@ interactive desktop because the legacy Miles backend failed in the SSH session.
 Audio output, Windows 11 hardware, Windows ARM and Wine remain unverified.
 Windows updates are manual and packages are not Authenticode-signed. The macOS
 signed automatic updater remains unchanged. Production configuration is unchanged.
+
+The Windows launcher also started the native client at 1920×1080 fullscreen on the test adapter. The prior 1280×800 fullscreen choice fell back to 800×600; 1280×800 windowed mode worked. The test profile was restored to windowed mode afterward.
