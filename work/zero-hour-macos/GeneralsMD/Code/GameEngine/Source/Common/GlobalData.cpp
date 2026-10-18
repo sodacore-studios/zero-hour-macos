@@ -1357,7 +1357,15 @@ void GlobalData::parseCustomDefinition()
 }
 
 long tempExeCRC = 2339762132;
+static bool usePrivateSimulationCRC = false;
 
+
+UnsignedInt GlobalData::generatePrivateSimulationCRC(UnsignedInt seed)
+{
+    tempExeCRC = seed;
+    usePrivateSimulationCRC = true;
+    return generateExeCRC();
+}
 
 UnsignedInt GlobalData::generateExeCRCForMac(long exeCRC)
 {
@@ -1389,6 +1397,8 @@ UnsignedInt GlobalData::generateExeCRC()
 #if defined(__APPLE__)
 	exeCRC.set(tempExeCRC);
 #else
+    if (usePrivateSimulationCRC) exeCRC.set(static_cast<UnsignedInt>(tempExeCRC));
+    else
 	{
 		Char buffer[ _MAX_PATH ];
 		GetModuleFileName( nullptr, buffer, sizeof( buffer ) );
@@ -1450,6 +1460,15 @@ UnsignedInt GlobalData::generateExeCRC()
 AsciiString GlobalData::BuildUserDataPathFromRegistry()
 {
 	AsciiString myDocumentsDirectory;
+#ifdef _WIN32
+    const char* portableRoot = getenv("GENERALS_USER_DATA_ROOT");
+    if (portableRoot && *portableRoot) {
+        myDocumentsDirectory = portableRoot;
+        if (!myDocumentsDirectory.endsWith("\\")) myDocumentsDirectory.concat('\\');
+        myDocumentsDirectory.concat("Command and Conquer Generals Zero Hour Data\\");
+        return myDocumentsDirectory;
+    }
+#endif
 
 #ifndef __APPLE__
 #if defined(_MSC_VER) && (_MSC_VER < 1300)

@@ -87,7 +87,7 @@ public:
 	Bool getShowHotKeyLabels() const;
 	Bool getWASDMapScroll() const;
 	Bool getVerboseEngineLogging() const;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	Real getMaxCameraHeight(Real iniHeight) const;
 #endif
 	Bool getSendDelay();

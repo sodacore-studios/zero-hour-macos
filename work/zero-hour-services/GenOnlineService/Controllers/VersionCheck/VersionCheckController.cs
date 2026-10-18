@@ -52,6 +52,7 @@ namespace GenOnlineService.Controllers
 		public string patcher_name { get; set; } = String.Empty;
 		public string patcher_path { get; set; } = String.Empty;
 		public Int64 patcher_size { get; set; } = 0;
+        public UInt32 simulation_crc { get; set; } = 0;
 	}
 
 	public class GET_VersionManifest_Result : APIResult
@@ -175,11 +176,20 @@ namespace GenOnlineService.Controllers
                         if (Program.g_Config?.GetValue<bool>("PrivateService:Enabled") == true)
                         {
                             uint accepted = Program.g_Config.GetValue<uint>("PrivateService:NativeClientCRC32");
-                            result.result = accepted != 0 && execrc == accepted &&
+                            var builds = new Dictionary<uint, uint>();
+                            foreach (var build in Program.g_Config.GetSection("PrivateService:AcceptedClients").GetChildren())
+                            {
+                                if (!uint.TryParse(build.Key, out uint binary) || binary == 0 ||
+                                    !uint.TryParse(build.Value, out uint simulation) || simulation == 0 ||
+                                    !builds.TryAdd(binary, simulation)) return result;
+                            }
+                            bool admitted = PrivateClientCompatibility.TryAccept(execrc, accepted, builds, out uint simulationCrc);
+                            result.result = admitted &&
                                 ver == Constants.GENERALS_ONLINE_VERSION &&
                                 netver == Constants.GENERALS_ONLINE_NET_VERSION &&
                                 servicesver == Constants.GENERALS_ONLINE_SERVICE_VERSION
                                 ? EVersionCheckResult.OK : EVersionCheckResult.Failed;
+                            if (result.result == EVersionCheckResult.OK) result.simulation_crc = simulationCrc;
                             return result;
                         }
 

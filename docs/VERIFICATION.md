@@ -44,3 +44,18 @@ binary. The live server keeps its existing accepted checksum until coordinated.
 - Apple Developer ID signing/notarization and all supported macOS versions have not been validated.
 - The original automated render benchmarks used a 1728 × 882 target with audio bypassed on a locked desktop. They do not establish 5120 × 1440 GPU frame rates or new audio behavior.
 - The update installer tests verify launch-request rollback; they cannot guarantee that a future version will not crash later during play.
+
+## Windows development candidate (2026-10-21)
+
+- The known Windows test device was identified over SSH before changes: Windows 10
+  build 19045, Intel HD Graphics and AMD Radeon R5 M255. Build Tools 2022 were
+  installed in a separate test directory without rebooting the device.
+- The shared pacing, match-clock and input-budget suites pass locally; pacing and
+  clock header coverage is 100 percent. Native Windows execution is pending.
+- The private-server compatibility policy tests pass. The full .NET 10 Release
+  server build succeeds with zero warnings and errors.
+- Full Windows compilation, packaged startup, graphics, input, audio and a complete
+  Mac-to-Windows Internet match are pending. Do not treat this candidate as a
+  verified Windows release. The live server has not been changed.
+- The Windows launcher currently uses manual updates; macOS retains its signed
+  automatic updater. Windows ARM and Windows 11 hardware have not been tested.

@@ -11,7 +11,7 @@ if [[ "$(uname -s)" == Darwin ]]; then
   profdata=(xcrun llvm-profdata)
   cov=(xcrun llvm-cov)
 fi
-header="$root/work/zero-hour-macos/Platform/MacOS/Source/Main"
+header="$root/work/zero-hour-macos/Core/GameEngine/Include/Common"
 "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -fprofile-instr-generate -fcoverage-mapping \
   -I"$header" "$root/work/input-tests/events.cpp" -o "$output/input-tests"
 LLVM_PROFILE_FILE="$output/input.profraw" "$output/input-tests"

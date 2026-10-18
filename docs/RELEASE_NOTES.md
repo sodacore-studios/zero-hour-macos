@@ -1,3 +1,16 @@
+## Windows and private cross-platform multiplayer candidate
+
+- Extend the shared camera, WASD, right-click order, selection and fixed-step
+  pacing improvements to the native Windows x86 build.
+- Add an isolated-profile Windows launcher, build scripts, downloadable packaging
+  and native Windows core checks with coverage.
+- Validate private HTTPS/WSS connections against the Windows certificate store.
+- Add explicit server admission for multiple binary CRCs with a shared simulation
+  checksum for validated platform pairs; retain script and version checks.
+
+Windows gameplay and a complete cross-platform Internet match are not yet
+verified. The live server is unchanged. Windows updates are currently manual.
+
 ## Graphics and mouse controls
 
 - Fix intermittent terrain grid lines during fast camera pans by preserving vertex and index buffers already referenced by queued Metal draws. Initial writes and no-overwrite appends keep their direct shared-memory path; no per-frame GPU wait is added.

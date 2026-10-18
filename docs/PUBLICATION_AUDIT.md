@@ -25,3 +25,14 @@ outputs and test profiles remain excluded. No history cleanup was needed.
 The code file hashes match the user-accepted second local graphics candidate;
 subsequent changes only finalize documentation. CI independently rebuilds the
 release and validates its distributable artifacts.
+
+## Windows candidate audit
+
+The candidate and 4,917 reachable history blobs were checked for known operator
+paths/addresses, private key material, common GitHub/AWS credentials and sensitive
+configuration filenames before upload. No such private values were found. A
+PEM-header string in the already-public networking DLL was reviewed as a parser
+constant, not a complete private key. Private test-host scripts, game files,
+profiles, build outputs and live configuration remain outside tracked content.
+The Windows test transfer started from the exact public commit and tree verified
+against GitHub. No history rewrite was performed.

@@ -4,7 +4,7 @@
 #include "../OnlineServices_Init.h"
 #include "Common/System/NativeFileSystem.h"
 #include "Common/OptionPreferences.h"
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #include "GameLogic/GameLogic.h"
 #endif
 
@@ -12,7 +12,7 @@
 #define SETTINGS_KEY_CAMERA_MIN_HEIGHT "min_height"
 #define SETTINGS_KEY_CAMERA_MOVE_SPEED_RATIO "move_speed_ratio"
 #define SETTINGS_KEY_CAMERA_MAX_HEIGHT_WHEN_LOBBY_HOST "max_height_only_when_lobby_host"
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #define SETTINGS_KEY_CAMERA_MAX_HEIGHT_LOCAL "max_height_local"
 #endif
 
@@ -69,7 +69,7 @@ float GenOnlineSettings::DetermineCameraMaxHeight()
 		}
 	}
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	if (TheGameLogic != nullptr && TheGameLogic->isInMultiplayerGame())
 	{
 		return (float)GENERALS_ONLINE_DEFAULT_LOBBY_CAMERA_ZOOM;
@@ -160,7 +160,7 @@ void GenOnlineSettings::Load(void)
 				{
 					m_Camera_MaxHeight_LobbyHost = std::clamp<float>(static_cast<float>(cameraSettings[SETTINGS_KEY_CAMERA_MAX_HEIGHT_WHEN_LOBBY_HOST]), GENERALS_ONLINE_MIN_LOBBY_CAMERA_ZOOM, GENERALS_ONLINE_MAX_LOBBY_CAMERA_ZOOM);
 				}
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 
 				if (cameraSettings.contains(SETTINGS_KEY_CAMERA_MAX_HEIGHT_LOCAL))
 				{
@@ -335,7 +335,7 @@ void GenOnlineSettings::Load(void)
 	// Always save so we re-serialize anything new or missing
 	Save();
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	m_bVerbose = OptionPreferences().getVerboseEngineLogging();
 #endif
 }
@@ -353,7 +353,7 @@ void GenOnlineSettings::Save()
 				{
 					{SETTINGS_KEY_CAMERA_MIN_HEIGHT, m_Camera_MinHeight},
 					{SETTINGS_KEY_CAMERA_MAX_HEIGHT_WHEN_LOBBY_HOST, m_Camera_MaxHeight_LobbyHost},
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 					{SETTINGS_KEY_CAMERA_MAX_HEIGHT_LOCAL, m_Camera_MaxHeight_Local},
 #endif
 					{ SETTINGS_KEY_CAMERA_MOVE_SPEED_RATIO, m_Camera_MoveSpeedRatio },

@@ -471,7 +471,7 @@ Bool OptionPreferences::getWASDMapScroll() const
 {
 	OptionPreferences::const_iterator it = find("WASDMapScroll");
 	if (it == end())
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
         return TRUE;
 #else
 		return FALSE;
@@ -495,7 +495,7 @@ Bool OptionPreferences::getVerboseEngineLogging() const
 	return FALSE;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 Real OptionPreferences::getMaxCameraHeight(Real iniHeight) const
 {
 	OptionPreferences::const_iterator it = find("MaxCameraHeight");

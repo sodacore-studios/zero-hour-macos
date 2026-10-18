@@ -609,7 +609,7 @@ void MetaEventTranslator::onKeyPressed(GameMessageDisposition &disp, Int systemK
 	// TheSuperHackers @info The regular key handler only triggers events when the mapped key is pressed,
 	// not when the modifier (CTRL, ALT, SHIFT) is pressed, unless the key is MK_NONE.
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	// WASD map-scroll (Options.ini) must dominate unmodified W/A/S/D in gameplay so
 	// LookAtTranslator receives them; MetaEvent runs earlier in the stream.
 	if (keyModState == NONE &&

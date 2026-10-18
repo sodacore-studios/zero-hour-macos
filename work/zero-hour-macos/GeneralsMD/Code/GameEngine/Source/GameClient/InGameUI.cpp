@@ -7341,7 +7341,7 @@ void InGameUI::drawGameTime()
 	Int currentFrame = TheGameLogic->getFrame();
 	Int gameSeconds = (Int)(SECONDS_PER_LOGICFRAME_REAL * currentFrame);
 	Int frame = currentFrame % 30;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     if (!TheGameLogic->isInReplayGame()) {
         // The match HUD shows real active play time, independent of game speed.
         const double wallSeconds = TheGameEngine->getElapsedMatchSeconds();

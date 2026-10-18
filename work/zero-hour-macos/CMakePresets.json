@@ -225,6 +225,20 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Darwin"
             }
+        },
+        {
+            "name": "windows-x86",
+            "displayName": "Windows x86 Release (Visual Studio 2022)",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "Win32",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "RTS_BUILD_GENERALS": "OFF",
+                "RTS_BUILD_CORE_TOOLS": "OFF",
+                "RTS_BUILD_ZEROHOUR_TOOLS": "OFF",
+                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL",
+                "RTS_FLAGS": "/W3"
+            }
         }
     ],
     "buildPresets": [

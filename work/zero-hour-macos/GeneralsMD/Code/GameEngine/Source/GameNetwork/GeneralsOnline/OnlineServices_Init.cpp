@@ -423,7 +423,7 @@ void NGMP_OnlineServicesManager::Shutdown()
 
 void NGMP_OnlineServicesManager::FetchMacParityCRC(std::function<void(long)> fnCallback)
 {
-	// TheSuperHackers @feature: private Mac sessions compare the actual native build.
+	// TheSuperHackers @feature: private native sessions compare the actual native build.
 	if (PrivateService::enabled()) { fnCallback(0); return; }
 #ifdef __APPLE__
 	std::string strManifestURI = NGMP_OnlineServicesManager::GetAPIEndpoint("VersionManifest");
@@ -522,10 +522,14 @@ void NGMP_OnlineServicesManager::StartVersionCheck(std::function<void(bool bSucc
 					nlohmann::json jsonObject = nlohmann::json::parse(strBody);
 					VersionCheckResponse authResp = jsonObject.get<VersionCheckResponse>();
 
-					if (authResp.result == EVersionCheckResponseResult::OK)
+					if (bSuccess && statusCode == 200 && authResp.result == EVersionCheckResponseResult::OK)
 					{
 						NetworkLog(ELogVerbosity::LOG_RELEASE, "VERSION CHECK: Up To Date");
 						DEBUG_NETWORK_MAC(("VERSION CHECK: Up To Date"));
+                        if (PrivateService::enabled() && jsonObject.contains("simulation_crc")) {
+                            const uint32_t seed = jsonObject.at("simulation_crc").get<uint32_t>();
+                            if (seed != 0) TheWritableGlobalData->m_exeCRC = GlobalData::generatePrivateSimulationCRC(seed);
+                        }
 						fnCallback(true, false);
 					}
 					else if (authResp.result == EVersionCheckResponseResult::NEEDS_UPDATE)

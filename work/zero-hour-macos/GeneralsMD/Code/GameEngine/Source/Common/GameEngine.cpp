@@ -121,7 +121,7 @@
 
 static UnsignedInt s_frameRateLimitOverride = 0;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 static void readFrameRateLimitOverride()
 {
 	const char *env = getenv("GENERALS_FPS_LIMIT");
@@ -900,7 +900,7 @@ void GameEngine::init()
 		NGMP_OnlineServicesManager::Settings.Graphics_DrawStatsOverlay() ? 1 : 0));
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	readFrameRateLimitOverride();
 	DEBUG_SETTINGS_MAC(("[init] FrameRateLimitOverride=%u", s_frameRateLimitOverride));
 #endif
@@ -940,7 +940,7 @@ void GameEngine::reset()
 /// -----------------------------------------------------------------------------------------------
 void GameEngine::resetSubsystems()
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     m_matchClock.reset();
     m_logicWallTime = {};
     m_fixedStepBudget.reset();
@@ -1006,7 +1006,7 @@ Bool GameEngine::canUpdateRegularGameLogic(UnsignedInt logicTimeQueryFlags)
 	const Bool useFastMode = TheGlobalData->m_TiVOFastMode && TheGameLogic->isInReplayGame();
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     if (!getenv("ZERO_HOUR_PERF_LEGACY_PACING") && TheGameLogic->isInGame() && !useFastMode && !isTimeFrozen() && !isGameHalted()) {
         if (m_pendingLogicSteps == 0) return false;
         --m_pendingLogicSteps;
@@ -1048,7 +1048,7 @@ DECLARE_PERF_TIMER(GameEngine_update)
  */
 void GameEngine::update()
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     static const bool reportPerformance = getenv("ZERO_HOUR_PERF") != nullptr;
     const auto perfStart = std::chrono::steady_clock::now();
     const unsigned perfFrameBefore = TheGameLogic->getFrame();
@@ -1136,7 +1136,7 @@ void GameEngine::update()
 		}
 
 		// TheSuperHackers @info Ignores frozen time because the script engine needs updating in the logic update regardless.
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
         for (unsigned step = 0; step < FixedStepBudget::MaxSteps; ++step)
 #else
         for (unsigned step = 0; step < 1; ++step)
@@ -1149,7 +1149,7 @@ void GameEngine::update()
             if (getenv("ZERO_HOUR_PERF_CRC") && TheGameLogic->getFrame() != frameBefore && TheGameLogic->getFrame() % 600 == 0)
                 fprintf(stderr, "[PERF_CRC] frame=%u crc=%u\n", TheGameLogic->getFrame(), TheGameLogic->getCRC(CRC_RECALC));
             if (!TheFramePacer->isTimeFrozen()) TheGameClient->step();
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
             // Menus, pauses and transitions need one script update, not catch-up.
             if (!TheGameLogic->isInGame() || TheGameLogic->getFrame() <= frameBefore ||
                 isTimeFrozen() || TheNetwork != networkBefore || m_quitting) break;
@@ -1168,7 +1168,7 @@ void GameEngine::update()
 #endif
         }
 	}
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     if (reportPerformance) {
         static auto windowStart = perfStart;
         static unsigned renders = 0, logicSteps = 0;

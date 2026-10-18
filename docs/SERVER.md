@@ -48,3 +48,19 @@ The API check creates a guest. The relay test allocates two ports, checks the pu
 Before changes, back up configuration, Compose files and a consistent MariaDB dump. Source code is not a database backup. Coordinate DNS/certificate, WSS URL, proxy target, TURN public/container IP, allowed peers, NAT and launcher address during a move. Transfer secrets securely or rotate them consistently across dependent services.
 
 For client releases, coordinate the same binary on every Mac and set its CRC in the service. The automatic client updater does not perform this server rollout. To roll back, restore previous configuration and client binaries, then restart only affected services. Retain database volumes. HTTPS and UDP forwarding can be disabled independently.
+
+## Multiple native client builds
+
+The Windows development branch adds `PrivateService:AcceptedClients`, a JSON
+object mapping each accepted executable CRC32 (decimal key) to a nonzero shared
+simulation CRC32 (decimal value). Only group builds after deterministic replay
+and real match verification. Binary admission remains mandatory and unknown
+binaries, malformed entries, and protocol mismatches fail closed. While an
+explicit mapping exists, `NativeClientCRC32` is not an additional bypass.
+
+The server returns the selected seed only after a successful version check. The
+client includes the normal engine version and multiplayer script data in the
+final handshake checksum. This permits different platform binaries without
+silently ignoring mismatched scripts. It cannot prove simulation determinism.
+An absent mapping preserves the existing single-build configuration. Keep the
+live server on its validated settings until the complete candidate is accepted.

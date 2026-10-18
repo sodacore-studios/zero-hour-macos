@@ -837,7 +837,10 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		{
 			*pEnd = 0;
 		}
-		::SetCurrentDirectory(buffer);
+		const char* gamePath = getenv("ZERO_HOUR_GAME_PATH");
+        if (gamePath && *gamePath) {
+            if (!SetCurrentDirectoryA(gamePath) || !SetDllDirectoryA(gamePath)) return 1;
+        } else ::SetCurrentDirectory(buffer);
 
 
 #ifdef RTS_DEBUG

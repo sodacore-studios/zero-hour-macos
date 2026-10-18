@@ -44,7 +44,7 @@ public:
 //	UnsignedInt get() { return htonl(crc); }	///< Get the combined CRC
 	UnsignedInt get();
 
-#if ((defined(_MSC_VER) && _MSC_VER < 1300) && RETAIL_COMPATIBLE_CRC) || defined(__APPLE__)
+#if ((defined(_MSC_VER) && _MSC_VER < 1300) && RETAIL_COMPATIBLE_CRC) || defined(__APPLE__) || defined(_WIN32)
   void set( UnsignedInt v )
   {
     crc = v;
@@ -124,7 +124,7 @@ public:
     return crc;
   }
 
-#if ((defined(_MSC_VER) && _MSC_VER < 1300) && RETAIL_COMPATIBLE_CRC) || defined(__APPLE__)
+#if ((defined(_MSC_VER) && _MSC_VER < 1300) && RETAIL_COMPATIBLE_CRC) || defined(__APPLE__) || defined(_WIN32)
   void set( UnsignedInt v )
   {
     crc = v;

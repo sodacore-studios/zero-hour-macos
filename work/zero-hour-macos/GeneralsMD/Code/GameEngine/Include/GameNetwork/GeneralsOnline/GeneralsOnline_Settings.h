@@ -1,5 +1,9 @@
 #pragma once
+#ifdef _WIN32
+#include "GameNetwork/GeneralsOnline/Vendor/libcurl/curl.h"
+#else
 #include <curl/curl.h>
+#endif
 
 enum EHTTPVersion
 {
@@ -18,7 +22,7 @@ public:
 	float Camera_MoveSpeedRatio() const { return m_Camera_MoveSpeedRatio; }
 	float Camera_GetMinHeight() const { return m_Camera_MinHeight; }
 	float Camera_GetMaxHeight_WhenLobbyHost() const { return m_Camera_MaxHeight_LobbyHost; }
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	float Camera_GetMaxHeight_Local() const { return m_Camera_MaxHeight_Local; }
 #endif
 
@@ -124,7 +128,7 @@ private:
 	float m_Camera_MoveSpeedRatio = m_Camera_MoveSpeedRatio_default;
 
 	float m_Camera_MaxHeight_LobbyHost = GENERALS_ONLINE_DEFAULT_LOBBY_CAMERA_ZOOM;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	float m_Camera_MaxHeight_Local = GENERALS_ONLINE_DEFAULT_LOBBY_CAMERA_ZOOM;
 #endif
 

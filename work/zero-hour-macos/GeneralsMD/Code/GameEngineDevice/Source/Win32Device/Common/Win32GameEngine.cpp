@@ -1,3 +1,4 @@
+#include "Common/InputEventBudget.h"
 /*
 **	Command & Conquer Generals Zero Hour(tm)
 **	Copyright 2025 Electronic Arts Inc.
@@ -148,11 +149,13 @@ void Win32GameEngine::serviceWindowsOS()
 	// see if we have any messages to process, a nullptr window handle tells the
 	// OS to look at the main window associated with the calling thread, us!
 	//
-	while( PeekMessage( &msg, nullptr, 0, 0, PM_NOREMOVE ) )
+	InputEventBudget budget(timeGetTime());
+	while( PeekMessage( &msg, nullptr, 0, 0, PM_NOREMOVE ) && budget.take(timeGetTime()) )
 	{
 
 		// get the message
 		returnValue = GetMessage( &msg, nullptr, 0, 0 );
+        if (returnValue <= 0) { setQuitting(true); break; }
 
 		// this is one possible way to check for quitting conditions as a message
 		// of WM_QUIT will cause GetMessage() to return 0

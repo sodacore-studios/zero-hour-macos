@@ -46,16 +46,59 @@ jobs:
         with:
           name: updater-coverage
           path: ${{ runner.temp }}/update-tests/html
+  server:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet run --project work/server-tests/CompatibilityTests.csproj
+      - run: dotnet build work/zero-hour-services/GenOnlineService/GenOnlineService.csproj -c Release
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Native Windows core checks and coverage
+        shell: pwsh
+        run: |
+          $env:PATH = "C:\Program Files\LLVM\bin;" + $env:PATH
+          ./work/windows/CoreTests.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-core-coverage
+          path: outputs/windows-coverage
+      - name: Build Windows x86 client
+        shell: pwsh
+        run: ./work/windows/Build.ps1
+      - name: Package Windows candidate
+        shell: pwsh
+        run: |
+          $version = 'candidate'
+          if ('${{ github.ref }}' -eq 'refs/heads/main') {
+            $version = (python work/release/version.py) -replace '^version=', ''
+          }
+          python work/windows/package.py --version $version
+          if ($LASTEXITCODE -ne 0) { throw 'Windows packaging failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86-release
+          path: outputs/windows-delivery/
   required-checks:
     if: always()
-    needs: [core, launcher]
+    needs: [core, launcher, server, windows]
     runs-on: ubuntu-24.04
     steps:
       - name: Require all deterministic checks
         env:
           CORE: ${{ needs.core.result }}
           LAUNCHER: ${{ needs.launcher.result }}
-        run: test "$CORE" = success && test "$LAUNCHER" = success
+          SERVER: ${{ needs.server.result }}
+          WINDOWS: ${{ needs.windows.result }}
+        run: test "$CORE" = success && test "$LAUNCHER" = success && test "$SERVER" = success && test "$WINDOWS" = success
   native:
     needs: required-checks
     runs-on: macos-15
@@ -111,9 +154,13 @@ jobs:
         with:
           name: macOS-arm64-release
           path: outputs
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x86-release
+          path: outputs/${{ needs.native.outputs.version }}
       - name: Publish verified release and tag
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.native.outputs.version }}
         run: |
-          gh release create "v$VERSION" outputs/"$VERSION"/* --target "$GITHUB_SHA" --title "Zero Hour $VERSION · Apple Silicon" --notes-file docs/RELEASE_NOTES.md --latest
+          gh release create "v$VERSION" outputs/"$VERSION"/* --target "$GITHUB_SHA" --title "Zero Hour $VERSION · macOS and Windows" --notes-file docs/RELEASE_NOTES.md --latest

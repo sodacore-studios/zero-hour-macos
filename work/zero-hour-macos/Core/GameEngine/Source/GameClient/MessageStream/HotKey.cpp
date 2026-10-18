@@ -100,7 +100,7 @@ GameMessageDisposition HotKeyTranslator::translateGameMessage(const GameMessage 
 		}
 		if(newModState != 0)
 			return disp;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		{
 			static const Bool s_wasdMapScroll = OptionPreferences().getWASDMapScroll();
 			if (s_wasdMapScroll && !(TheShell && TheShell->isShellActive()))

@@ -72,7 +72,7 @@ private:
 	ICoord2D m_originalAnchor;
 	ICoord2D m_currentPos;
 	Real m_anchorAngle;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	Real m_anchorPitch;
 	Bool m_isRotationDragging;
 #endif
@@ -91,7 +91,7 @@ private:
     void setScrolling(ScrollType scrollType);
     void stopScrolling();
     Bool canScrollAtScreenEdge() const;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     void updateRotationDragState();
     void resetCameraToHome();
 #endif
