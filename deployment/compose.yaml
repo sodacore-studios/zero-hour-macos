@@ -29,7 +29,14 @@ services:
       - "${SERVICE_LAN_IP:?set SERVICE_LAN_IP}:3097:8080"
     volumes:
       - ./appsettings.json:/app/appsettings.json:ro
+      - diagnostics:/app/Diagnostics
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     mem_limit: 512m
     cpus: 1
 volumes:
   database:
+  diagnostics:

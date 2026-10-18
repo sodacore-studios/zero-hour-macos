@@ -49,6 +49,54 @@ Before changes, back up configuration, Compose files and a consistent MariaDB du
 
 For client releases, coordinate the same binary on every Mac and set its CRC in the service. The automatic client updater does not perform this server rollout. To roll back, restore previous configuration and client binaries, then restart only affected services. Retain database volumes. HTTPS and UDP forwarding can be disabled independently.
 
+## Match diagnostics
+
+Enable `Diagnostics:Enabled` in the service configuration. The deployment template
+stores structured JSON Lines in `/app/Diagnostics` on a dedicated Docker volume.
+Events include UTC timestamps and a process boot ID, lobby/match/player IDs,
+client-reported direct/relay connection outcomes, WebSocket connection duration
+and close codes, match assignment, lobby state transitions, reconnects and player
+results. Player IDs are numeric correlation identifiers, not anonymized identities.
+The new diagnostic stream does not include player names, IP addresses, chat,
+request bodies, invitation codes, tokens or exception messages. Existing console
+logs are separate and may contain operational identifiers.
+
+Every 30 seconds a health event records process CPU use (100% means one full CPU
+core), resident memory, online users, lobby count, sampler scheduling delay and
+the cumulative number of dropped diagnostic events. Non-WebSocket controller
+requests taking at least 500 ms, or failing with HTTP 5xx, are recorded with the
+controller name, status and elapsed time. No raw URL, query or headers are stored.
+
+Defaults are 4 MiB per file, at most 8 files and 7 days retention. Files rotate on
+size, UTC date or process restart; expired files are removed on rotation. The
+bounded queue never blocks game requests. Storage failures drop events and emit a
+console warning; `dropped_events` is reported when storage recovers. Keep the
+diagnostic volume private and never include it in public source or release assets.
+
+```json
+"Diagnostics": {
+  "Enabled": true,
+  "Directory": "/app/Diagnostics",
+  "MaxFileBytes": 4194304,
+  "MaxFiles": 8,
+  "RetentionDays": 7
+}
+```
+
+Read the files through SSH and Docker, or copy only the relevant files into a
+private operator directory. Filter by `match`/`lobby`, then compare both players'
+connection events with `health` and slow requests at the same UTC time. Do not
+expose a public log-download endpoint. The volume survives service replacement;
+include it explicitly in operator backups when retaining evidence matters.
+
+These records work with v0.3.3 clients, but do **not** measure gameplay RTT, packet
+loss, client FPS or lockstep stalls: peer gameplay traffic does not pass through
+the HTTP service. `socket_disconnected` concerns the service WebSocket, not proof
+of a failed gameplay connection. Full stutter attribution still needs client
+timing/transport samples from the affected match. Automated tests validate log
+schema, retention, rotation and shutdown flushing; they do not reproduce a match
+between separate Internet connections.
+
 ## Multiple native client builds
 
 The service supports `PrivateService:AcceptedClients`, a JSON

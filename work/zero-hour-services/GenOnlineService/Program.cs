@@ -1173,6 +1173,7 @@ namespace GenOnlineService
 			// Add services to the container.
 
 			g_Config = builder.Configuration;
+            builder.Services.AddHostedService<ServerDiagnostics>();
 
 			// Process the original client IP, request scheme, and host only when
 			// one or more trusted reverse proxies are configured.
@@ -1612,7 +1613,24 @@ namespace GenOnlineService
 			app.UseAuthentication();
 			app.UseAuthorization();
 
-			app.MapControllers();
+            // Only controller identity, status and elapsed time are retained; never URLs or payloads.
+            app.Use(async (context, next) =>
+            {
+                long began = System.Diagnostics.Stopwatch.GetTimestamp();
+                bool failed = false;
+                try { await next(context); }
+                catch { failed = true; throw; }
+                finally
+                {
+                    double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(began).TotalMilliseconds;
+                    var action = context.GetEndpoint()?.Metadata.GetMetadata<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>();
+                    if (action != null && !context.WebSockets.IsWebSocketRequest &&
+                        (elapsed >= 500 || failed || context.Response.StatusCode >= 500))
+                        ServerDiagnostics.Record(new(failed || context.Response.StatusCode >= 500 ? DiagnosticKind.RequestFailed : DiagnosticKind.SlowRequest)
+                        { Controller = action.ControllerName, Status = failed ? 500 : context.Response.StatusCode, DurationMs = Math.Round(elapsed, 1) });
+                }
+            });
+            app.MapControllers();
 
 
 			// cleanup

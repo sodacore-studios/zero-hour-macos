@@ -273,7 +273,9 @@ namespace GenOnlineService.Controllers
 			using var webSocket = acceptedSocket;
 
 			// attach
-			wsSess.AttachWebsocket(webSocket);
+            wsSess.AttachWebsocket(webSocket);
+            long socketStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+            ServerDiagnostics.Record(new(DiagnosticKind.SocketConnected) { Player = user_id, Reconnect = bIsReconnect });
 
 			var buffer = new byte[8196 * 4];
 			WebSocketReceiveResult? receiveResult = null;
@@ -283,6 +285,8 @@ namespace GenOnlineService.Controllers
 			MemoryStream? fragmentBuffer = null;
 			const int c_MaxReassembledMessageBytes = 8196 * 4 * 8;
 
+            try
+            {
 			while (webSocket.State == WebSocketState.Open)
 			{
 				bool bDisconnectTest = false;
@@ -366,12 +370,22 @@ namespace GenOnlineService.Controllers
 				await ProcessWSMessage(wsSess, sourceUserData, receiveResult, segment);
 			}
 
+            }
+            finally
+            {
+            var diagnosticLobby = _lobbyManager.GetPlayerParticipantLobby(user_id);
+            ServerDiagnostics.Record(new(DiagnosticKind.SocketDisconnected)
+            { Player = user_id, Lobby = diagnosticLobby?.LobbyID, Match = diagnosticLobby?.MatchID,
+              Status = webSocket.CloseStatus.HasValue ? (int)webSocket.CloseStatus.Value : null,
+              DurationMs = Math.Round(System.Diagnostics.Stopwatch.GetElapsedTime(socketStarted).TotalMilliseconds, 1) });
+            }
+
 			Console.ForegroundColor = ConsoleColor.Cyan;
 			SharedUserData? sourceData = WebSocketManager.GetSharedDataForUser(user_id);
 			Console.WriteLine("WEBSOCKET DISCONNECT FOR {0}", sourceData == null ? "NULL" : sourceData.m_strDisplayName);
 			Console.ForegroundColor = ConsoleColor.Gray;
 
-			// close the session
+            // close the session
 			if (wsSess != null)
 			{
 				await WebSocketManager.DeleteSession(user_id, wsSess.m_SessionType, wsSess, false);

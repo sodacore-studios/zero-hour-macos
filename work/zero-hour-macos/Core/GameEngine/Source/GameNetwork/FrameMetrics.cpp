@@ -243,8 +243,10 @@ void FrameMetrics::processLatencyResponse(UnsignedInt frame)
     {
         m_averageLatency += kvPaAir.second;
     }
-	NetworkLog(ELogVerbosity::LOG_DEBUG, "Avg latency is: %f / %d = %f", m_averageLatency, m_mapLatenciesLookup.size(), m_averageLatency /= m_mapLatenciesLookup.size());
+    // Logging arguments execute even when debug output is disabled. Average once.
+    const Real totalLatency = m_averageLatency;
     m_averageLatency /= m_mapLatenciesLookup.size();
+    NetworkLog(ELogVerbosity::LOG_DEBUG, "Avg latency is: %f / %zu = %f", totalLatency, m_mapLatenciesLookup.size(), m_averageLatency);
 
 
     if (timeDiff > 1000)

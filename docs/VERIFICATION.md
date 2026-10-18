@@ -1,5 +1,26 @@
 # Verification status
 
+## Multiplayer diagnostics candidate (2026-10-23)
+
+The user reported unit stutters with a smooth camera in a v0.3.3 macOS-to-macOS
+match across two Internet connections. This is consistent with simulation waits,
+but the affected match's client timing/transport logs are unavailable. It is not
+evidence that rendering, packet loss, the relay or a particular code defect was
+the cause.
+
+A deterministic test of the production latency estimator reproduced double
+division: two 120 ms acknowledgements were reported as a 60 ms average because a
+logging argument modified the value before it was divided again. The candidate
+removes that side effect. The existing server latency model also takes transport
+history into account, so correcting this defect alone is not proof that the
+reported stutters are resolved. The pacing/network suite passes with constant
+RTT, varying RTT, a long delay and an unknown acknowledgement. No new client
+binary or separate-connection match has been validated for this change yet.
+
+Server diagnostic tests cover structured records, UTC/match correlation, bounded
+file rotation, retention scope and flushing on shutdown. See `SERVER.md` for the
+fields, limits and distinction between service events and peer gameplay metrics.
+
 ## Performance
 
 The user reported successful performance testing and approved publication on 2026-10-21. The exact display mode, duration and multiplayer conditions of that acceptance were not specified. This is acceptance of the performance preview, not a claim that every test matrix case was executed.
