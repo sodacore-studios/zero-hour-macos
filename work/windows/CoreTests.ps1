@@ -6,7 +6,7 @@ $inc=Join-Path $root 'work\zero-hour-macos\Core\GameEngine\Include'
 $clang=(Get-Command clang++).Source
 function Build-And-Run([string]$name,[string[]]$sources,[string[]]$extra) {
     $exe=Join-Path $out ($name+'.exe')
-    & $clang -std=c++17 -Wall -Wextra -Werror '-fprofile-instr-generate' '-fcoverage-mapping' @extra "-I$inc" @sources -o $exe
+    & $clang -std=c++17 -D_CRT_SECURE_NO_WARNINGS -Wall -Wextra -Werror '-fprofile-instr-generate' '-fcoverage-mapping' @extra "-I$inc" @sources -o $exe
     if($LASTEXITCODE -ne 0){throw "Compile failed: $name"}
     $env:LLVM_PROFILE_FILE=Join-Path $out ($name+'.profraw')
     & $exe;if($LASTEXITCODE -ne 0){throw "Tests failed: $name"}
