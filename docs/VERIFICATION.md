@@ -45,76 +45,82 @@ binary. The live server keeps its existing accepted checksum until coordinated.
 - The original automated render benchmarks used a 1728 × 882 target with audio bypassed on a locked desktop. They do not establish 5120 × 1440 GPU frame rates or new audio behavior.
 - The update installer tests verify launch-request rollback; they cannot guarantee that a future version will not crash later during play.
 
-## Windows development candidate (2026-10-21)
+## Windows and cross-platform candidate (2026-10-21)
 
-- The known Windows test device was identified over SSH before changes: Windows 10
-  build 19045, Intel HD Graphics and AMD Radeon R5 M255. Build Tools 2022 were
-  installed in a separate test directory without rebooting the device.
-- The shared pacing, match-clock and input-budget suites pass locally and under
-  native MSVC on the Windows test device. GitHub also passes the Windows LLVM
-  checks, coverage export and PowerShell launcher validation.
-- The private-server compatibility policy tests pass. The full .NET 10 Release
-  server build succeeds with zero warnings and errors.
-- Windows x86 compilation and packaging passed in GitHub run 39613762580.
-  Hardware startup then exposed upstream DLLs requiring debug CRT files and a
-  missing Sentry runtime. That package is not a verified playable release. The
-  replacement builds networking from pinned source with Release runtimes and
-  checks the package dependency closure before upload. The replacement package
-  passed all aggregate checks in run 39622544361 and opened a native Direct3D 8
-  skirmish on the Windows test device.
-- An isolated staging service on the existing test server passed invitation
-  rejection, two authenticated WebSocket sessions, protected lobby create/join,
-  wrong-password rejection and TURN credential issuance. A public TURN probe
-  exchanged ten exact payloads bidirectionally and rejected an excluded peer.
-  The native macOS candidate also logged in and created a lobby in its actual UI.
-  These protocol tests do not establish a completed game or two separate Internet
-  access networks. The live service has not been changed.
-- The local candidates completed the same full 28:35 replay with exit zero on
-  both platforms: macOS in 01:45 and Windows in 04:49. All 1,716 simulation CRC
-  checkpoints (every 60 frames through frame 102,900) matched exactly. This tests
-  replay determinism; a complete live Mac-to-Windows match remains pending.
-  The original INIZH, MapsZH and GensecZH archive hashes also match.
-- The replay comparison identified and fixed a platform-specific pathfinding
-  allocation rule: macOS-only compatibility definitions are now shared with
-  Windows. Before the fix, a frame-240 state dump differed in an allocation
-  counter. After the fix, the full replay matched without disabling CRC checks.
-- Windows replay testing used the interactive desktop. Starting the legacy Miles
-  audio backend in the SSH session failed during initialization. Audio output
-  itself has not been verified.
-- The Windows launcher was opened on the test desktop through RustDesk. It
-  detected both EA game folders and rejected an empty player name. Its process
-  exit reporting also reproduced the missing-DLL startup failure above.
-- The Windows resolution dropdown was opened and used through RustDesk. Selecting
-  1280 x 800 wrote `Resolution = 1280 800` and opened an actual 1280 x 800 game
-  viewport. A skirmish rendered, WASD moved the camera in both directions, left
-  click selected a construction dozer, and a short right click moved it to the
-  selected ground location. Command hotkey labels were visible. The subsequent
-  local candidate opened the pause menu on Escape and closed normally through
-  its window close button. These checks do
-  not establish every resolution, GPU, audio device or a complete online game.
-- The Windows launcher currently uses manual updates; macOS retains its signed
-  automatic updater. Windows ARM and Windows 11 hardware have not been tested.
+The test device was identified over SSH before changes: Windows 10 build 19045,
+Intel HD Graphics and AMD Radeon R5 M255. A native x86 Release build used pinned
+networking dependencies and the installed original EA game files. No EA executable
+was replaced. The original INIZH, MapsZH and GensecZH archive hashes match the Mac.
 
-The first native cross-platform online test connected and loaded the map, but
-commands did not execute. Investigation found that network frame initialization
-was tied to render-generated messages and could miss frame one during catch-up.
-Frame bookkeeping now advances on every network update. A corrected native
-match, actual command execution and relay-only gameplay are still pending.
+### Native online match
 
-The network-frame regression harness compiles the production update functions
-with an empty render-message stream. The previous update fails the active-state
-assertion; the corrected update passes start, delayed start, repeated frame and
-leaving cases. Its coverage is included with the isolated pacing suite.
+A Mac host and Windows guest completed a controlled match on Alpine Assault (2)
+through the isolated staging service and a forced public TURN route. Both players
+produced a second construction dozer, completed a power plant and moved units with
+short right clicks. Windows WASD camera movement worked during the match. The Mac
+surrendered after approximately three minutes; both clients received the defeat
+and displayed the same result table with two units and two buildings per player.
 
-A subsequent forced-relay attempt exposed an incoming-connection registration
-race: the receiving client searched only for an already registered outgoing
-handle and never accepted a first incoming connection. Incoming peers are now
-resolved against the current authenticated lobby roster before transport
-registration. The isolated test compiles this production acceptance method and
-covers a first incoming peer, missing lobby/authentication, non-members, malformed
-identities, self-connections, duplicate handles and transport acceptance failure.
-The corrected Windows client then accepted the Mac and both native logs confirmed
-an ICE route via TURN. Match launch exposed a second startup boundary: the shell
-already has a nonzero frame when the network object is created. The transition
-now also requires multiplayer game mode, with a high shell-frame regression case.
-Native gameplay after this additional correction remains pending.
+The Mac validated 12,655 received CRC pairs through simulation frame 12,688, with
+no unequal or missing checksums. The Windows performance samples reported no
+mismatch and approximately 59–60 logic updates per second during most of the run.
+Both native transports confirmed TURN. Both machines used the same Internet access
+network; this is not verification across two unrelated ISPs, a long competitive
+match, large armies, spectators, reconnects or every map/faction combination.
+
+Tested executable SHA-256 values:
+
+- macOS ARM64: `534a2b4d060308038e1e6f785ea5c516a3999a58a9082d461dbd3ecc20cdc320`
+- Windows x86: `594ddc851d030dd0ab19c8748375f3fbb96ba1be44c47177ff19a986abd0fb33`
+
+The Mac executable came from CI source 886b2df; the Windows build additionally
+includes 0071ff4, which makes the already active Mac CRC cadence apply to Windows.
+CI/release rebuilds receive different binary hashes and need their own server
+admission. Publication does not change the production service's accepted binaries.
+
+### Replay and regression checks
+
+Both local candidates completed the same full 28:35 replay with exit zero: macOS
+in 01:45 and Windows in 04:49. All 1,716 simulation CRC checkpoints, every 60 frames
+through frame 102,900, matched. Shared compatibility definitions fixed a Windows
+pathfinding allocation-counter difference without disabling CRC validation.
+
+The online tests also found and fixed three independent startup/protocol defects:
+
+- Network frame advancement depended on render-generated messages and could skip
+  initialization during catch-up. Production-function tests cover empty streams,
+  high shell frames, actual multiplayer startup, repeated frames and leaving.
+- First incoming transport handles were not registered. The production acceptance
+  test covers authenticated lobby membership, malformed/self/duplicate identities,
+  missing authentication/lobby, pending handles and transport failure.
+- Diagnostic builds used a different live CRC interval. The cadence now depends
+  on the networking protocol compatibility mode, with all four combinations of
+  retail compatibility and diagnostic flags compiled in the isolated suite.
+
+Private service tests cover invitation rejection, authenticated WebSockets,
+password-protected lobby create/join and wrong-password rejection. A public TURN
+probe exchanged ten exact bidirectional payloads and rejected an excluded peer.
+The .NET 10 Release server build passed without warnings or errors. Shared pacing,
+clock and input-budget tests also passed under native MSVC on the test device.
+CI publishes isolated core/launcher/renderer coverage and gates releases.
+
+### Windows interaction and remaining limits
+
+The Windows Forms launcher detected both EA game folders and rejected an empty
+player name. Its resolution dropdown selected 1280 x 800, persisted that value,
+and opened a measured 1280 x 800 windowed viewport. Native Direct3D 8 skirmish and
+online rendering, WASD, left-click selection, short right-click movement, hotkey
+labels, Escape pause and normal process closure were observed.
+
+Fullscreen startup and normal exit were observed, but requesting 1280 x 800 on
+this hardware fell back to a smaller mode. The engine retries an adapter-supported
+resolution if Direct3D rejects the requested fullscreen mode. The dropdown does
+not guarantee that every listed fullscreen resolution is supported by a GPU.
+
+The former prebuilt networking DLLs required debug CRT/Sentry runtimes. They were
+replaced with pinned source builds and Release runtime/dependency closure checks;
+the replacement package starts natively. Windows replay testing used the
+interactive desktop because the legacy Miles backend failed in the SSH session.
+Audio output, Windows 11 hardware, Windows ARM and Wine remain unverified.
+Windows updates are manual and packages are not Authenticode-signed. The macOS
+signed automatic updater remains unchanged. Production configuration is unchanged.

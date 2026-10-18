@@ -27,7 +27,7 @@ Download the latest **macOS-arm64 DMG** from [Releases](https://github.com/sodac
 
 ## Support boundaries
 
-Apple Silicon only. The deployment target is macOS 13.3, which is not a claim that every supported OS version was physically tested. Packages are ad-hoc signed and update manifests are Ed25519 signed; Apple Developer ID signing and notarization are not configured. Windows x86 support and Mac-to-Windows private multiplayer are under development; see [Windows](docs/WINDOWS.md) and the verification matrix before testing.
+Apple Silicon only. The deployment target is macOS 13.3, which is not a claim that every supported OS version was physically tested. Packages are ad-hoc signed and update manifests are Ed25519 signed; Apple Developer ID signing and notarization are not configured. The Windows x86 candidate passed native Windows 10 gameplay and a controlled Mac-to-Windows match through a forced public TURN relay. See [Windows](docs/WINDOWS.md) and the [verification matrix](docs/VERIFICATION.md) for installation and exact limits.
 
 All players need matching engine builds. `Version.json` contains the binary CRC required by the private service. Publishing a GitHub release does not modify the live server's accepted CRC. The stable build was previously played in multiplayer; the user's performance approval does not specify a new two-Mac multiplayer test of the final updater build.
 

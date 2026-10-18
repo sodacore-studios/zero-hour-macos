@@ -16,7 +16,10 @@ installations available. The launcher does not replace the EA executable.
 
 Choose a resolution from the dropdown, WASD camera control, right-click orders
 and windowed or fullscreen mode before starting. The list includes standard and
-ultrawide sizes, connected display sizes and a previously saved custom size. Arrow keys and the mouse wheel remain available.
+ultrawide sizes, connected display sizes and a previously saved custom size.
+Fullscreen modes must be supported by the graphics adapter; otherwise the engine
+falls back to a safe mode. Use windowed mode if a chosen size is unavailable.
+Arrow keys and the mouse wheel remain available.
 Middle-button camera controls and command-button hotkey labels use the same
 shared implementation as macOS. Rendering uses Direct3D 8 on Windows; the Metal
 buffer fixes apply only to macOS.

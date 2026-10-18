@@ -57,7 +57,7 @@ LLVM_PROFILE_FILE="$output/incoming-connection.profraw" "$output/incoming-connec
 # Diagnostic flags must not change the live protocol cadence.
 for retail in 0 1; do
   for diagnostic in 0 1; do
-    flags=("-DRETAIL_COMPATIBLE_NETWORKING=$retail")
+    flags=(-D__APPLE__ "-DRETAIL_COMPATIBLE_NETWORKING=$retail")
     if [[ "$diagnostic" == 1 ]]; then flags+=(-DDEBUG_CRC); fi
     "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror "${flags[@]}" \
       "$output/network-frame.cpp" -o "$output/network-cadence-$retail-$diagnostic"

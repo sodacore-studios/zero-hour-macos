@@ -2,14 +2,22 @@
 
 - Extend the shared camera, WASD, right-click order, selection and fixed-step
   pacing improvements to the native Windows x86 build.
-- Add an isolated-profile Windows launcher, build scripts, downloadable packaging
+- Add a resolution dropdown and isolated-profile Windows launcher, build scripts, downloadable packaging
   and native Windows core checks with coverage.
 - Validate private HTTPS/WSS connections against the Windows certificate store.
 - Add explicit server admission for multiple binary CRCs with a shared simulation
   checksum for validated platform pairs; retain script and version checks.
 
-Windows gameplay and a complete cross-platform Internet match are not yet
-verified. The live server is unchanged. Windows updates are currently manual.
+- Fix incoming lobby-peer registration, empty-stream network startup and differing
+  live checksum intervals across diagnostic builds.
+
+Native Windows gameplay and a controlled Mac-host/Windows-guest match through a
+forced public TURN relay passed: construction, movement, surrender and matching
+result screens, with 12,655 identical CRC comparisons. Both devices used the same
+Internet access network. A full 28:35 replay also matched all 1,716 checkpoints.
+See `VERIFICATION.md` for exact scope and remaining limits. The production service
+is unchanged and must admit the release binaries before online use. Windows
+updates are manual; fullscreen modes depend on graphics-adapter support.
 
 ## Graphics and mouse controls
 
