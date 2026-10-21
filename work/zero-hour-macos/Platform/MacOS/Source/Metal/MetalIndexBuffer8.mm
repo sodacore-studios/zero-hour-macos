@@ -1,17 +1,14 @@
 #import "MetalIndexBuffer8.h"
 #import "MetalVertexBuffer8.h"
-#include "WW3D2/dx8indexbuffer.h"
-#include "WW3D2/dx8vertexbuffer.h"
-#include "WW3D2/dx8wrapper.h"
 #import <Metal/Metal.h>
 #include <windows.h>  // macOS Win32 type shim
 #include <cstdio>
+#include <cstring>
 
 extern void *g_MetalMTLDevice;
 
-// TheSuperHackers @perf Zero-copy index buffer.
-// Same pattern as MetalVertexBuffer8 — MTLBuffer with Shared storage is the
-// primary store. Lock() returns [buf contents] directly, no memcpy needed.
+// Shared storage with copy-on-write for updates after GPU binding, matching
+// the vertex buffer lifetime rules.
 
 MetalIndexBuffer8::MetalIndexBuffer8(unsigned int count, bool is32bit)
     : m_Count(count), m_Is32Bit(is32bit), m_RefCount(1), m_MTLBuffer(nullptr),
@@ -85,17 +82,28 @@ STDMETHODIMP MetalIndexBuffer8::Lock(UINT OffsetToLock, UINT SizeToLock,
   if (!ppbData)
     return E_POINTER;
 
-  if (Flags & D3DLOCK_DISCARD) {
-    if (m_MTLBuffer && g_MetalMTLDevice) {
-      id<MTLDevice> device = (__bridge id<MTLDevice>)g_MetalMTLDevice;
-      uint32_t size = m_Count * (m_Is32Bit ? 4 : 2);
-      id<MTLBuffer> buf =
-          [device newBufferWithLength:size
-                              options:MTLResourceStorageModeShared];
-      id<MTLBuffer> old_buf = (__bridge_transfer id<MTLBuffer>)m_MTLBuffer;
-      old_buf = nil; // Automatically released by ARC once command buffers finish
-      m_MTLBuffer = (__bridge_retained void *)buf;
+  // Shared storage does not synchronize CPU writes with queued GPU reads.
+  // Preserve the previous backing store once a draw has referenced it. Metal
+  // retains that store until the command buffer finishes; no GPU wait is needed.
+  // NOOVERWRITE remains the caller's promise to touch only unused ranges.
+  const bool discard = (Flags & D3DLOCK_DISCARD) != 0;
+  const bool preserve = m_GPUReferenced &&
+      !(Flags & (D3DLOCK_READONLY | D3DLOCK_NOOVERWRITE));
+  if (m_MTLBuffer && (discard || preserve)) {
+    id<MTLBuffer> oldBuffer = (__bridge id<MTLBuffer>)m_MTLBuffer;
+    id<MTLBuffer> replacement =
+        [oldBuffer.device newBufferWithLength:m_Count * (m_Is32Bit ? 4 : 2)
+                                      options:MTLResourceStorageModeShared];
+    if (!replacement) {
+      *ppbData = nullptr;
+      return E_OUTOFMEMORY;
     }
+    if (!discard)
+      memcpy(replacement.contents, oldBuffer.contents, m_Count * (m_Is32Bit ? 4 : 2));
+    id<MTLBuffer> releasedBuffer = (__bridge_transfer id<MTLBuffer>)m_MTLBuffer;
+    m_MTLBuffer = (__bridge_retained void *)replacement;
+    m_GPUReferenced = false;
+    (void)releasedBuffer;
   }
 
   if (m_MTLBuffer) {
@@ -113,8 +121,10 @@ STDMETHODIMP MetalIndexBuffer8::Unlock() {
 }
 
 void *MetalIndexBuffer8::GetMTLBuffer() {
-  if (m_MTLBuffer)
+  if (m_MTLBuffer) {
+    m_GPUReferenced = true;
     return m_MTLBuffer;
+  }
 
   id<MTLDevice> device = g_MetalMTLDevice
                              ? (__bridge id<MTLDevice>)g_MetalMTLDevice
@@ -139,6 +149,7 @@ void *MetalIndexBuffer8::GetMTLBuffer() {
     m_MTLBuffer = (__bridge_retained void *)buf;
   }
 
+  m_GPUReferenced = m_MTLBuffer != nullptr;
   return m_MTLBuffer;
 }
 

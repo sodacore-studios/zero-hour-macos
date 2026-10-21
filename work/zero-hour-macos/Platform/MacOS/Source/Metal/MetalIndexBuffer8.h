@@ -34,4 +34,5 @@ protected:
   bool m_Is32Bit;
   int m_RefCount;
   void *m_MTLBuffer;
+  bool m_GPUReferenced = false;
 };

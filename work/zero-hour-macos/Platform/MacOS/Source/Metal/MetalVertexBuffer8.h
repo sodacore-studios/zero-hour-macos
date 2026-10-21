@@ -35,4 +35,5 @@ protected:
   unsigned int m_VertexSize;
   int m_RefCount;
   void *m_MTLBuffer;
+  bool m_GPUReferenced = false;
 };

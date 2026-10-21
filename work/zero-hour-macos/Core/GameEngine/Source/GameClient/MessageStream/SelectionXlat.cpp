@@ -378,6 +378,11 @@ GameMessageDisposition SelectionTranslator::translateGameMessage(const GameMessa
 			break;
 		}
 		case GameMessage::MSG_RAW_MOUSE_POSITION:
+#ifdef __APPLE__
+        // Drag events carry the current position. The periodic position message
+        // is emitted before this frame's input batch and can be a frame behind.
+        case GameMessage::MSG_RAW_MOUSE_LEFT_DRAG:
+#endif
 		{
 			disp = onRawMousePosition(msg);
 			break;

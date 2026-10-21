@@ -1,15 +1,11 @@
-## Skirmish game speed
+## Graphics and mouse controls
 
-- Fix the Skirmish speed slider being ignored by the decoupled macOS simulation scheduler.
-- Interpret the original slider scale consistently: 15 = half speed, 30 = normal speed, 60 = double speed. The far-right `--` setting runs as fast as the bounded catch-up budget and hardware allow.
-- Preserve fractional tick credit at the catch-up ceiling so intermediate high-speed settings remain accurate at low render rates.
-- Keep render FPS independent from game speed. Changing the graphics frame limit no longer overrides the selected local match speed.
-- Reset the local speed at the start of a new match, campaign, load or replay. Multiplayer continues to use its network-controlled rate.
-- Keep the live-match HUD clock in real active play time, regardless of the selected speed. Pauses, script freezes and network stalls do not advance it. Replays retain their recorded simulation-position clock.
-- Test every numeric slider position with the production pacing code at 15, 30, 60 and 144 render FPS, plus unlimited, pause/halt, rate overrides and reset behavior. The existing one-hour pacing and network deadline tests also pass. Clock tests verify that one real hour displays as one hour at 0.5x, 1x, 2x and 8x, including pause/resume, long render frames and loading transitions.
+- Fix intermittent terrain grid lines during fast camera pans by preserving vertex and index buffers already referenced by queued Metal draws. Initial writes and no-overwrite appends keep their direct shared-memory path; no per-frame GPU wait is added.
+- Keep the drag-selection rectangle visible and updating during mouse motion. Ignore inactive projector state in the UI shader, process current drag positions and bound OS input work between rendered frames.
+- Enable **Left-click selects; right-click moves / attacks** by default in the launcher. Uncheck the option for classic controls. Right-button camera scrolling is disabled with the new controls; WASD, arrows and edge scrolling remain available.
+- Preserve existing launcher settings when loading the new mouse-control option.
+- Add deterministic input and renderer-buffer regression suites and coverage reports to the required CI checks.
+
+The user confirmed that terrain lines were gone, then confirmed that continuous drag selection and the new mouse controls worked correctly in the local Apple Silicon candidate on 2026-10-21 and approved publication. Local Metal shader/readback tests, input scheduling tests, launcher migration tests, existing pacing/clock tests and terrain coverage checks passed. The CI release rebuild receives its own signature, checksum and packaging validation; a two-Mac match with that exact binary has not been verified.
 
 Original game data is required and excluded from downloads. Packages support Apple Silicon and target macOS 13.3 or later; they are ad-hoc signed, not Apple-notarized. Automatic updates use signed manifests. All players and the private server's accepted client CRC must be coordinated using `Version.json` before online play; publication does not update the live server.
-
-A fresh interactive Skirmish session and a two-Mac match with this exact build have not yet been verified.
-
-Existing save files have no historical wall-time field. On load, the displayed clock starts from the saved simulation-time baseline and subsequently advances in real active time. The clock is presentation-only and does not change save formats, simulation rules or multiplayer checksums.

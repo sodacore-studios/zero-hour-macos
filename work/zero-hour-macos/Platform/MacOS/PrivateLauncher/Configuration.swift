@@ -8,9 +8,20 @@ struct LaunchSettings: Codable {
     var relay = ""
     var wasd = true
     var fullscreen = true
+    // Optional for backward-compatible decoding of existing settings files.
+    var rightClickOrders: Bool? = nil
+    var usesRightClickOrders: Bool { rightClickOrders ?? true }
     var resolution = "1920 x 1080"
 
     static let resolutions = ["1280 x 720", "1280 x 800", "1600 x 900", "1920 x 1080", "1920 x 1200", "2560 x 1440", "2560 x 1600", "3840 x 2160", "2560 x 1080", "3440 x 1440", "3840 x 1600", "2560 x 720", "3200 x 900", "3840 x 1080", "5120 x 1440", "5120 x 2160", "6016 x 3384", "7680 x 2160"]
+
+    func gameOptions() -> [String: String] {
+        var values = ["Resolution": resolution.replacingOccurrences(of: " x ", with: " "),
+                      "WASDMapScroll": wasd ? "yes" : "no", "Windowed": "yes",
+                      "UseAlternateMouse": usesRightClickOrders ? "yes" : "no"]
+        if usesRightClickOrders { values["UseRightMouseScrollWithAlternateMouse"] = "no" }
+        return values
+    }
 
     func endpoint() throws -> String {
         let value = server.trimmingCharacters(in: .whitespacesAndNewlines)

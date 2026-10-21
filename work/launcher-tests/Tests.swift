@@ -15,6 +15,21 @@ func check(_ value: Bool, line: UInt = #line) { if !value { fatalError("Check fa
   for value in ["relay.example.org", "relay.example.org:0", "relay.example.org:70000", "user:pass@relay.example.org:3478", "relay.example.org:3478/path"] {
    s.relay=value;do{_ = try s.relayAddress();fatalError("Accepted invalid relay")}catch{}
   }
+  let legacyData = try JSONEncoder().encode(LaunchSettings())
+  let legacy = try JSONDecoder().decode(LaunchSettings.self, from: legacyData)
+  check(legacy.usesRightClickOrders)
+  check(legacy.gameOptions()["UseAlternateMouse"] == "yes")
+  check(legacy.gameOptions()["UseRightMouseScrollWithAlternateMouse"] == "no")
+  var classic = legacy; classic.rightClickOrders = false
+  let restored = try JSONDecoder().decode(LaunchSettings.self, from: JSONEncoder().encode(classic))
+  check(!restored.usesRightClickOrders)
+  check(restored.gameOptions()["UseAlternateMouse"] == "no")
+  check(restored.gameOptions()["UseRightMouseScrollWithAlternateMouse"] == nil)
+  let modernOptions = updateOptions("UseAlternateMouse = no\nCustomOption = keep\n", values: legacy.gameOptions())
+  check(modernOptions.contains("UseAlternateMouse = yes"))
+  check(modernOptions.contains("UseRightMouseScrollWithAlternateMouse = no"))
+  check(modernOptions.contains("CustomOption = keep"))
+  print("PASS: right-click orders, legacy settings migration and classic-mode opt-out")
   let text="Resolution = 800 600\nCustomOption = keep\nResolution = 1024 768\n"
   let result=updateOptions(text,values:["Resolution":"3840 1080","WASDMapScroll":"yes"])
   check(result.components(separatedBy:"Resolution =").count==2)
