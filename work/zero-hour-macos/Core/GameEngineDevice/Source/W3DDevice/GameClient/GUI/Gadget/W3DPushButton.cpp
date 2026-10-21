@@ -56,7 +56,7 @@
 #include "W3DDevice/GameClient/W3DGameWindow.h"
 #include "W3DDevice/GameClient/W3DDisplay.h"
 #include "W3DDevice/GameClient/W3DGadget.h"
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #include "GameClient/GameFont.h"
 #include "GameClient/Color.h"
 #endif
@@ -121,7 +121,7 @@ static void drawButtonText( GameWindow *window, WinInstanceData *instData )
 	if( text->getFont() != window->winGetFont() )
 		text->setFont( window->winGetFont() );
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	if( BitIsSet( window->winGetStatus(), WIN_STATUS_HOTKEY_LABEL ) )
 	{
 		const Int badgeSize = ( (size.x < size.y) ? size.x : size.y ) / 4;

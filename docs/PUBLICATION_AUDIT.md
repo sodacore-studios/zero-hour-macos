@@ -25,3 +25,23 @@ outputs and test profiles remain excluded. No history cleanup was needed.
 The code file hashes match the user-accepted second local graphics candidate;
 subsequent changes only finalize documentation. CI independently rebuilds the
 release and validates its distributable artifacts.
+
+## Windows candidate audit
+
+The candidate and 4,917 reachable history blobs were checked for known operator
+paths/addresses, private key material, common GitHub/AWS credentials and sensitive
+configuration filenames before upload. No such private values were found. A
+PEM-header string in the already-public networking DLL was reviewed as a parser
+constant, not a complete private key. Private test-host scripts, game files,
+profiles, build outputs and live configuration remain outside tracked content.
+The Windows test transfer started from the exact public commit and tree verified
+against GitHub. No history rewrite was performed.
+
+The final cross-platform follow-up was rescanned on 2026-10-21: 5,045 current
+tracked/proposed files and 5,050 reachable history blobs produced no findings for
+the audit's credential, private-address/path or sensitive-filename rules. Native
+match evidence is summarized with binary hashes and numeric checks; invitations,
+TURN credentials, private hostnames, profiles and raw session logs are excluded.
+The agent-created commits use the preceding Sunday as author/committer metadata
+at the user's request. These dates are not evidence of build or test execution;
+CI timestamps and the explicitly dated verification record describe those events.

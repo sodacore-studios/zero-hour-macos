@@ -38,8 +38,7 @@ struct S3ScreenshotEntry
 #include <mutex>
 #include <atomic>
 
-#pragma comment(lib, "libcurl/libcurl.lib")
-#pragma comment(lib, "sentry/sentry.lib")
+// Networking dependencies are linked by CMake; telemetry is disabled.
 
 
 #include "GameNetwork/GeneralsOnline/Vendor/libcurl/curl.h"

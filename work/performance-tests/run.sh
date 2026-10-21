@@ -24,7 +24,7 @@ LLVM_PROFILE_FILE="$output/coverage.profraw" "$output/fixed-step-tests"
   "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/FixedStepBudget.h" \
   "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/MatchClock.h"
 
-# Compile the real macOS pacing implementation; only external game/platform services are stubbed.
+# Compile the real shared pacing implementation; only external game/platform services are stubbed.
 "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -D__APPLE__ -fprofile-instr-generate -fcoverage-mapping \
   -I "$root/work/performance-tests/stubs" \
   -I "$root/work/zero-hour-macos/Core/GameEngine/Include" \
@@ -35,3 +35,32 @@ LLVM_PROFILE_FILE="$output/game-speed.profraw" "$output/game-speed-tests"
 "${cov[@]}" show "$output/game-speed-tests" -instr-profile="$output/game-speed.profdata" \
   -format=html -output-dir="$output/html/game-speed" \
   "$root/work/zero-hour-macos/Core/GameEngine/Source/Common/FramePacer.cpp"
+
+# Exercise production network frame advancement with no render-generated messages.
+python3 "$root/work/performance-tests/network_frame_test.py" "$output/network-frame.cpp"
+"${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -D__APPLE__ -fprofile-instr-generate -fcoverage-mapping \
+  -DRETAIL_COMPATIBLE_NETWORKING=0 "$output/network-frame.cpp" -o "$output/network-frame-tests"
+LLVM_PROFILE_FILE="$output/network-frame.profraw" "$output/network-frame-tests"
+"${profdata[@]}" merge -sparse "$output/network-frame.profraw" -o "$output/network-frame.profdata"
+"${cov[@]}" show "$output/network-frame-tests" -instr-profile="$output/network-frame.profdata" \
+  -format=html -output-dir="$output/html/network-frame" "$output/network-frame.cpp"
+
+# An incoming peer can arrive before the outgoing connection is registered.
+python3 "$root/work/performance-tests/incoming_connection_test.py" "$output/incoming-connection.cpp"
+"${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -fprofile-instr-generate -fcoverage-mapping \
+  "$output/incoming-connection.cpp" -o "$output/incoming-connection-tests"
+LLVM_PROFILE_FILE="$output/incoming-connection.profraw" "$output/incoming-connection-tests"
+"${profdata[@]}" merge -sparse "$output/incoming-connection.profraw" -o "$output/incoming-connection.profdata"
+"${cov[@]}" show "$output/incoming-connection-tests" -instr-profile="$output/incoming-connection.profdata" \
+  -format=html -output-dir="$output/html/incoming-connection" "$output/incoming-connection.cpp"
+
+# Diagnostic flags must not change the live protocol cadence.
+for retail in 0 1; do
+  for diagnostic in 0 1; do
+    flags=(-D__APPLE__ "-DRETAIL_COMPATIBLE_NETWORKING=$retail")
+    if [[ "$diagnostic" == 1 ]]; then flags+=(-DDEBUG_CRC); fi
+    "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror "${flags[@]}" \
+      "$output/network-frame.cpp" -o "$output/network-cadence-$retail-$diagnostic"
+    "$output/network-cadence-$retail-$diagnostic"
+  done
+done

@@ -131,7 +131,7 @@ Bool LookAtTranslator::canScrollAtScreenEdge() const
 	return true;
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 static const Int MIDDLE_CLICK_DEAD_ZONE_PIXELS = 5;
 
 //-----------------------------------------------------------------------------
@@ -257,7 +257,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 		case KEY_RIGHT:
 			scrollDir[DIR_RIGHT] = isPressed;
 			break;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		case KEY_W:
 		case KEY_A:
 		case KEY_S:
@@ -340,7 +340,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 		m_isRotating = true;
 		m_anchor = msg->getArgument(0)->pixel;
 		m_anchorAngle = TheTacticalView->getAngle();
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		m_anchorPitch = TheTacticalView->getPitch();
 		m_isRotationDragging = false;
 #endif
@@ -349,7 +349,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 		break;
 	}
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	//-----------------------------------------------------------------------------
 	case GameMessage::MSG_RAW_MOUSE_MIDDLE_DOUBLE_CLICK:
 	{
@@ -365,7 +365,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 		const UnsignedInt now = timeGetTime();
 		m_lastMouseMoveTimeMsec = now;
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		const UnsignedInt CLICK_DURATION_MSEC = 350;
 #else
 		const UnsignedInt CLICK_DURATION_MSEC = 167;
@@ -377,7 +377,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 		if (dx < 0) dx = -dx;
 		Int dy = m_currentPos.y - m_originalAnchor.y;
 		Bool didMove = dx > PIXEL_OFFSET || dy > PIXEL_OFFSET;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		didMove = m_isRotationDragging;
 #endif
 
@@ -432,7 +432,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 		}
 
 		// rotate the view
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		if (m_isRotating)
 			updateRotationDragState();
 
@@ -454,7 +454,7 @@ GameMessageDisposition LookAtTranslator::translateGameMessage(const GameMessage*
 			}
 
 			TheTacticalView->userSetAngle(targetAngle);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 			if (!TheGameLogic->isInMultiplayerGame())
 			{
 				const Real pitchDelta = FACTOR * (m_currentPos.y - m_originalAnchor.y);

@@ -1,10 +1,16 @@
-if(APPLE)
+if(APPLE OR WIN32)
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     
     # Enable WebSockets and SecureTransport for macOS
     set(ENABLE_WEBSOCKETS ON CACHE BOOL "" FORCE)
-    set(CURL_USE_SECURETRANSPORT ON CACHE BOOL "" FORCE)
+    if(WIN32)
+        set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
+        set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+        set(CURL_ZLIB OFF CACHE BOOL "" FORCE)
+    else()
+        set(CURL_USE_SECURETRANSPORT ON CACHE BOOL "" FORCE)
+    endif()
     
     # Disable unneeded features to save build time and dependencies
     set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)

@@ -33,3 +33,6 @@ Online-Einstellungen.json
 /work/private-*/
 /work/release/sign-tool
 *.zip
+/work/distribution-windows/
+Launcher.json
+*.profraw

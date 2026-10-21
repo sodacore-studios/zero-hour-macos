@@ -38,6 +38,15 @@
 
 Bool  getStringFromRegistry(HKEY root, AsciiString path, AsciiString key, AsciiString& val)
 {
+    if (key.compareNoCase("InstallPath") == 0) {
+        const char* base = getenv("GENERALS_BASE_INSTALL_PATH");
+        if (base && *base) {
+            val = base;
+            if (!val.endsWith("\\") && !val.endsWith("/")) val.concat('\\');
+            return TRUE;
+        }
+    }
+
 	HKEY handle;
 	unsigned char buffer[256];
 	unsigned long size = 256;

@@ -1,6 +1,6 @@
 # Build and release
 
-Supported client: native macOS ARM64, deployment target 13.3. Required developer tools: Xcode/Command Line Tools, CMake 3.25+, Ninja, Python 3, and the build tools required by dependency recipes. GitHub Actions uses macos-15 ARM64 runners. End users download binaries instead of compiling.
+Supported build targets are native macOS ARM64 (deployment target 13.3) and Windows x86. See [Windows build and operation](WINDOWS.md) for Visual Studio requirements and [verification](VERIFICATION.md) for the tested hardware matrix. The following commands build the macOS target. Required developer tools: Xcode/Command Line Tools, CMake 3.25+, Ninja, Python 3, and the build tools required by dependency recipes. GitHub Actions uses macos-15 ARM64 runners. End users download binaries instead of compiling.
 
 ```sh
 cmake --preset macos -S work/zero-hour-macos -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3
@@ -16,9 +16,9 @@ The package script compiles the launcher/helper, bundles the native engine and d
 
 ## GitHub Actions
 
-`Build and release` runs deterministic simulation/terrain tests on Linux and launcher/updater and deterministic renderer-buffer tests on macOS for pushes and pull requests. Coverage HTML is uploaded as artifacts. `required-checks` aggregates both suites. Native builds depend on that aggregate. Main builds increment the 0.3 release line, package/sign, and publish a version tag and downloadable artifacts only after successful tests and build. Release notes come from `docs/RELEASE_NOTES.md` and must be maintained when behavior changes.
+`Build and release` runs deterministic simulation, network, input and terrain tests on Linux; launcher/updater and renderer-buffer tests on macOS; server compatibility/controller tests on Linux; and native core checks on Windows. Coverage reports are uploaded as artifacts. The macOS engine build follows the core, launcher and server checks; the Windows job builds and packages its x86 client. `required-checks` requires every test job and both platform builds to succeed. Main builds increment the 0.3 release line, package/sign, and publish a version tag and downloadable artifacts only after successful tests and build. Release notes come from `docs/RELEASE_NOTES.md` and must be maintained when behavior changes.
 
-The previous private repository could not enable branch protection under its plan. For public delivery, configure main to require `required-checks` and restrict updates to reviewed, passing changes. Release jobs always depend on the aggregate tests and successful native build, independently of repository protection. Actual branch-protection state is verified during publication.
+Main is protected by the required `required-checks` aggregate, including administrator enforcement. The release job also depends on that aggregate independently of branch protection. Actual protection state is checked during publication. Branch builds provide Windows packages and a macOS engine test artifact; only main builds publish the complete launcher packages to the stable release channel.
 
 Automated releases require the repository Actions secret `UPDATE_SIGNING_KEY`. The checked-in public key must match. Builds and publication timestamps record actual execution time. User-authored commits made for this delivery use the preceding Sunday in Europe/Berlin, retaining local time of day, as requested; those Git timestamps are metadata, not evidence of when work occurred. Existing history is not rewritten.
 

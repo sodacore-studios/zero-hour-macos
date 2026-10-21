@@ -391,7 +391,12 @@ void HTTPRequest::PlatformStartRequest()
         {
             curl_easy_setopt(m_pCURL, CURLOPT_SSL_VERIFYPEER, 1L);
             curl_easy_setopt(m_pCURL, CURLOPT_SSL_VERIFYHOST, 2L);
+            #ifdef _WIN32
+            curl_easy_setopt(m_pCURL, CURLOPT_CAINFO, nullptr);
+            curl_easy_setopt(m_pCURL, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+#else
             curl_easy_setopt(m_pCURL, CURLOPT_CAINFO, "/etc/ssl/cert.pem");
+#endif
             curl_easy_setopt(m_pCURL, CURLOPT_VERBOSE, 0L);
         }
 

@@ -245,7 +245,7 @@ void W3DView::setWidth(Int width)
 	//we want to maintain the same scale, so we'll need to adjust the fov.
 	//default W3D fov for full-screen is 50 degrees.
 	// TheSuperHackers @feature macOS Hor+ widescreen: additional width reveals terrain.
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 	const Real referenceWidth = (Real)TheDisplay->getHeight() * (4.0f / 3.0f);
 	const Real halfWidth = tan(DEG_TO_RADF(50.0f) * 0.5f) * width / referenceWidth;
 	m_3DCamera->Set_View_Plane(2.0f * atan(halfWidth), -1);
@@ -2258,7 +2258,7 @@ void W3DView::setDefaultView(Real pitch, Real angle, Real maxHeight)
 
     // TODO_NGMP: Better way of doing this
 #if defined(GENERALS_ONLINE) && defined(RTS_ZEROHOUR)
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     bForceDefaultCam = bForceDefaultCam || (TheGameLogic != nullptr && TheGameLogic->isInShellGame());
 #endif
     if (bForceDefaultCam)
@@ -2275,7 +2275,7 @@ void W3DView::setDefaultView(Real pitch, Real angle, Real maxHeight)
 
 #endif
 
-#if defined(GENERALS_ONLINE) && !defined(__APPLE__)
+#if defined(GENERALS_ONLINE) && !defined(__APPLE__) && !defined(_WIN32)
     Real baseAspectRatio = 800.0f / 600.0f;
     Real currentAspectRatio = (float)TheDisplay->getWidth() / (float)TheDisplay->getHeight();
     Real aspectWidthScale = fabs((1 + (currentAspectRatio - baseAspectRatio)));
@@ -3776,7 +3776,7 @@ bool W3DView::getDesiredTerrainDrawSize(ICoord2D &dimensions) const
 		return false;
 	}
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     if (TheTerrainRenderObject && TheTerrainRenderObject->getMap()) {
         const auto bounds = TerrainViewBounds::calculate(*m_3DCamera,
             *TheTerrainRenderObject->getMap(), TheTerrainRenderObject->getMinHeight(),

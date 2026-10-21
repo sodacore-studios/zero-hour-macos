@@ -614,6 +614,7 @@ private:
 	
 public:
 	static UnsignedInt generateExeCRCForMac(long exeCRC);
+    static UnsignedInt generatePrivateSimulationCRC(UnsignedInt seed);
 	
 private:
 

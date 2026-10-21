@@ -56,7 +56,7 @@ void FramePacer::update()
 	// TheSuperHackers @bugfix xezon 05/08/2025 Re-implements the frame rate limiter
 	// with higher resolution counters to cap the frame rate more accurately to the desired limit.
 	UnsignedInt maxFps = getActualFramesPerSecondLimit();
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     // Diagnostic render ceiling for reproducible low-frame-rate replay tests.
     static const int diagnosticFps = getenv("ZERO_HOUR_PERF_RENDER_HZ") ? atoi(getenv("ZERO_HOUR_PERF_RENDER_HZ")) : 0;
     if (diagnosticFps >= 5 && diagnosticFps <= 240) maxFps = diagnosticFps;
@@ -215,7 +215,7 @@ Int FramePacer::getActualLogicTimeScaleFps(LogicTimeQueryFlags flags) const
 		return getLogicTimeScaleFps();
 	}
 
-	#ifdef __APPLE__
+	#if defined(__APPLE__) || defined(_WIN32)
     return getenv("ZERO_HOUR_PERF_LEGACY_PACING") ? RenderFpsPreset::UncappedFpsValue : m_skirmishLogicFPS;
 #else
     // Original platforms retain their existing render-bound scheduling.

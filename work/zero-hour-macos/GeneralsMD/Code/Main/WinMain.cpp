@@ -510,19 +510,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 
 		//-------------------------------------------------------------------------
 		case WM_KEYDOWN:
-		{
-			Int key = (Int)wParam;
-
-			switch (key)
-			{
-			case VK_ESCAPE:
-			{
-				PostQuitMessage(0);
-				break;
-			}
-			}
+			// The keyboard subsystem handles Escape as a menu/cancel action.
+			// Posting WM_QUIT here bypasses those controls and disconnects matches.
 			return 0;
-		}
 
 		//-------------------------------------------------------------------------
 		case WM_LBUTTONDOWN:
@@ -837,7 +827,10 @@ Int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		{
 			*pEnd = 0;
 		}
-		::SetCurrentDirectory(buffer);
+		const char* gamePath = getenv("ZERO_HOUR_GAME_PATH");
+        if (gamePath && *gamePath) {
+            if (!SetCurrentDirectoryA(gamePath) || !SetDllDirectoryA(gamePath)) return 1;
+        } else ::SetCurrentDirectory(buffer);
 
 
 #ifdef RTS_DEBUG

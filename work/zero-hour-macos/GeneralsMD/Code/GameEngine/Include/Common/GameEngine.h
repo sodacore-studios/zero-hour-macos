@@ -42,7 +42,7 @@ class LocalFileSystem;
 class ArchiveFileSystem;
 class FileSystem;
 class Mouse;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #include "Common/FixedStepBudget.h"
 #include "Common/MatchClock.h"
 #include <chrono>
@@ -76,7 +76,7 @@ public:
 	virtual void execute();											/**< The "main loop" of the game engine.
 																								 It will not return until the game exits. */
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     double getElapsedMatchSeconds() const { return m_matchClock.elapsedSeconds(); }
 #endif
 
@@ -113,7 +113,7 @@ protected:
 	virtual ParticleSystemManager* createParticleSystemManager(Bool dummy) = 0;
 	virtual AudioManager *createAudioManager(Bool dummy) = 0;				///< Factory for Audio Manager
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
     MatchClock m_matchClock;
     FixedStepBudget m_fixedStepBudget;
     std::chrono::steady_clock::time_point m_logicWallTime{};

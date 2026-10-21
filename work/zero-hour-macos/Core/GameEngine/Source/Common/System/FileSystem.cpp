@@ -164,7 +164,7 @@ static Bool isServedByModArchive( const Char *filename )
 	if (TheArchiveFileSystem == nullptr)
 		return FALSE;
 
-	ArchiveFile *archive = TheArchiveFileSystem->getArchiveFile(AsciiString(filename), 0);
+	[[maybe_unused]] ArchiveFile *archive = TheArchiveFileSystem->getArchiveFile(AsciiString(filename), 0);
 	if (archive == nullptr)
 		return FALSE;
 
@@ -343,7 +343,7 @@ File*		FileSystem::openFile( const Char *filename, Int access, size_t bufferSize
 
 		if (file != nullptr)
 		{
-			ArchiveFile *archive = TheArchiveFileSystem->getArchiveFile(AsciiString(filename), instance);
+			[[maybe_unused]] ArchiveFile *archive = TheArchiveFileSystem->getArchiveFile(AsciiString(filename), instance);
 			DEBUG_FILESYSTEM_MAC(("openFile Served: %s <- %s", filename,
 				archive != nullptr ? archive->getName().str() : "archive"));
 		}
@@ -395,7 +395,7 @@ File*		FileSystem::openFileOutsideMod( const Char *filename, Int access )
 
 	for (FileInstance instance = 0; instance < ~FileInstance(0); ++instance)
 	{
-		ArchiveFile *archive = TheArchiveFileSystem->getArchiveFile(archivedName, instance);
+		[[maybe_unused]] ArchiveFile *archive = TheArchiveFileSystem->getArchiveFile(archivedName, instance);
 		if (archive == nullptr)
 			return nullptr;
 

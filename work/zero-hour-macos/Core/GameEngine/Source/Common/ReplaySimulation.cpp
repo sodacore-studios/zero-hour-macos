@@ -78,6 +78,11 @@ int ReplaySimulation::simulateReplaysInThisProcess(const std::vector<AsciiString
 		return numErrors != 0 ? 1 : 0;
 	}
 	// Note that we use printf here because this is run from cmd.
+	const char* intervalText = getenv("ZERO_HOUR_PERF_CRC_INTERVAL");
+	const int requestedInterval = intervalText ? atoi(intervalText) : 600;
+	const unsigned int crcInterval = requestedInterval >= 1 && requestedInterval <= 600 ? requestedInterval : 600;
+	const char* dumpFrameText = getenv("ZERO_HOUR_REPLAY_DUMP_FRAME");
+	const int dumpFrame = dumpFrameText ? atoi(dumpFrameText) : -1;
 	DWORD totalStartTimeMillis = GetTickCount();
 	for (size_t i = 0; i < filenames.size(); i++)
 	{
@@ -105,6 +110,20 @@ int ReplaySimulation::simulateReplaysInThisProcess(const std::vector<AsciiString
 					fflush(stdout);
 				}
 				TheGameLogic->UPDATE();
+#if defined(RTS_ZEROHOUR)
+                if (getenv("ZERO_HOUR_PERF_CRC") && TheGameLogic->getFrame() % crcInterval == 0) {
+                    printf("[PERF_CRC] frame=%u crc=%u\n", TheGameLogic->getFrame(), TheGameLogic->getCRC(CRC_RECALC));
+                    fflush(stdout);
+                }
+                // Offline replay diagnostics only; live match CRC checks remain active.
+                if (dumpFrame > 0 && TheGameLogic->getFrame() == static_cast<unsigned int>(dumpFrame)) {
+                    AsciiString dumpPath;
+                    dumpPath.format("%sreplay-frame-%d.crc", TheGlobalData->getPath_UserData().str(), dumpFrame);
+                    TheGameLogic->getCRC(CRC_RECALC, dumpPath);
+                    printf("[PERF_CRC] Wrote state dump at frame %d\n", dumpFrame);
+                    fflush(stdout);
+                }
+#endif
 #if defined(RTS_ZEROHOUR)
 				if (TheGlobalData->m_exportStats)
 					StatsExporterCollectSnapshot();

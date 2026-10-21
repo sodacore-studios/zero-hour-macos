@@ -5,7 +5,7 @@
 #include <ws2ipdef.h>
 #endif
 #include <mutex>
-#include "ValveNetworkingSockets/steam/steamnetworkingcustomsignaling.h"
+#include <steam/steamnetworkingcustomsignaling.h>
 #include "PluginInterfaces.h"
 
 class NetRoom_ChatMessagePacket;
@@ -192,6 +192,7 @@ public:
 
 	void SendACPacket(uint32_t userID, const void* pData, uint32_t dataLen);
 
+	void AcceptIncomingConnection(HSteamNetConnection handle, const SteamNetworkingIdentity& identity);
 	void StartConnectionSignalling(const char* szMiddlewareID, int64_t remoteUserID, uint16_t preferredPort);
 	void DisconnectUser(int64_t remoteUserID);
 	void Disconnect();

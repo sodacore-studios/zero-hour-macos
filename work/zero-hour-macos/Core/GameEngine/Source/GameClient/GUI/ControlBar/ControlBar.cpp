@@ -80,7 +80,7 @@
 #include "GameClient/ControlBarResizer.h"
 #include "GameClient/GadgetListBox.h"
 #include "GameClient/HotKey.h"
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 #include "Common/OptionPreferences.h"
 #endif
 #include "GameClient/GameWindowTransitions.h"
@@ -2452,7 +2452,7 @@ void ControlBar::setCommandBarBorder( GameWindow *button, CommandButtonMappedBor
 }
 
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 static UnicodeString toUpperHotKeyLabel( const AsciiString &hotKey )
 {
 	UnicodeString label;
@@ -2540,7 +2540,7 @@ void ControlBar::setControlCommand( GameWindow *button, const CommandButton *com
 		if(hotKey.isNotEmpty())
 			TheHotKeyManager->addHotKey(button, hotKey);
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(_WIN32)
 		static const Bool s_showHotKeyLabels = OptionPreferences().getShowHotKeyLabels();
 
 		Bool isSpecialPowerShortcutButton = FALSE;

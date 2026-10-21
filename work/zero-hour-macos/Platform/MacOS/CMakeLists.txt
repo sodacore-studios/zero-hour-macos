@@ -61,17 +61,7 @@ set(STUBS_SRC
     Source/GeneralsOnlineStubs.cpp
 )
 
-# ── Cross-Platform Sync Flags (Windows Retail Match) ──
-# "Generals Online" Windows players use the original 2003 binary (retail behavior = 1)
-# but the launcher injects memory patches (like fixing the network packet size to 1104).
-# Because our codebase uses GENERALS_ONLINE, it defaults to setting ALL retail flags to 0.
-# To prevent desyncs and packet drops, we MUST force retail gameplay behaviors to 1,
-# and only set the networking flag to 0 (which matches the launcher's memory patch).
-# We inject these into the parent scope so Core and GameEngine receive them.
-set(MAC_SYNC_FLAGS " -DRETAIL_COMPATIBLE_NETWORKING=0 -DRETAIL_COMPATIBLE_CRC=0 -DRETAIL_COMPATIBLE_XFER_SAVE=1 -DRETAIL_COMPATIBLE_PATHFINDING=1 -DRETAIL_COMPATIBLE_PATHFINDING_ALLOCATION=1 -DRETAIL_COMPATIBLE_AIGROUP=1 -DRETAIL_COMPATIBLE_CIRCLE_FILL_ALGORITHM=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}${MAC_SYNC_FLAGS}" PARENT_SCOPE)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}${MAC_SYNC_FLAGS}" PARENT_SCOPE)
-set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS}${MAC_SYNC_FLAGS}" PARENT_SCOPE)
+# Simulation compatibility definitions are shared with Windows in the root build.
 
 # ── Combine all sources ──
 add_library(macos_platform STATIC
@@ -161,12 +151,14 @@ if(METAL_CHECK_RESULT EQUAL 0)
     set(METAL_AIR_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/MacOSShaders.air)
     set(METAL_BUNDLE_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/default.metallib)
     add_custom_command(
+        VERBATIM
         OUTPUT ${METAL_AIR_OUTPUT}
         COMMAND xcrun -sdk macosx metal -std=metal3.0 -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET} -c ${METAL_SHADER_SOURCE} -o ${METAL_AIR_OUTPUT}
         DEPENDS ${METAL_SHADER_SOURCE}
         COMMENT "Compiling Metal shaders"
     )
     add_custom_command(
+        VERBATIM
         OUTPUT ${METAL_BUNDLE_RESOURCE}
         COMMAND xcrun -sdk macosx metallib ${METAL_AIR_OUTPUT} -o ${METAL_BUNDLE_RESOURCE}
         DEPENDS ${METAL_AIR_OUTPUT}
@@ -176,6 +168,7 @@ else()
     message(STATUS "Offline Metal compiler unavailable; bundle shader source for runtime compilation")
     set(METAL_BUNDLE_RESOURCE ${CMAKE_CURRENT_BINARY_DIR}/MacOSShaders.metal)
     add_custom_command(
+        VERBATIM
         OUTPUT ${METAL_BUNDLE_RESOURCE}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${METAL_SHADER_SOURCE} ${METAL_BUNDLE_RESOURCE}
         DEPENDS ${METAL_SHADER_SOURCE}
