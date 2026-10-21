@@ -28,6 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "PreRTS.h"	// This must go first in EVERY cpp file in the GameEngine
+#include "Common/GameEngine.h"
 
 #define DEFINE_SHADOW_NAMES
 
@@ -7339,10 +7340,18 @@ void InGameUI::drawGameTime()
 
 	Int currentFrame = TheGameLogic->getFrame();
 	Int gameSeconds = (Int)(SECONDS_PER_LOGICFRAME_REAL * currentFrame);
+	Int frame = currentFrame % 30;
+#ifdef __APPLE__
+    if (!TheGameLogic->isInReplayGame()) {
+        // The match HUD shows real active play time, independent of game speed.
+        const double wallSeconds = TheGameEngine->getElapsedMatchSeconds();
+        gameSeconds = static_cast<Int>(wallSeconds);
+        frame = static_cast<Int>((wallSeconds - gameSeconds) * 100);
+    }
+#endif
 	Int hours = gameSeconds / 60 / 60;
 	Int minutes = (gameSeconds / 60) % 60;
 	Int seconds = gameSeconds % 60;
-	Int frame = currentFrame % 30;
 
 	UnicodeString gameTimeString;
 	gameTimeString.format(L"%2.2d:%2.2d:%2.2d", hours, minutes, seconds);

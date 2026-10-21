@@ -17,10 +17,12 @@ fi
 LLVM_PROFILE_FILE="$output/coverage.profraw" "$output/fixed-step-tests"
 "${profdata[@]}" merge -sparse "$output/coverage.profraw" -o "$output/coverage.profdata"
 "${cov[@]}" report "$output/fixed-step-tests" -instr-profile="$output/coverage.profdata" \
-  "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/FixedStepBudget.h"
+  "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/FixedStepBudget.h" \
+  "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/MatchClock.h"
 "${cov[@]}" show "$output/fixed-step-tests" -instr-profile="$output/coverage.profdata" \
   -format=html -output-dir="$output/html" \
-  "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/FixedStepBudget.h"
+  "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/FixedStepBudget.h" \
+  "$root/work/zero-hour-macos/Core/GameEngine/Include/Common/MatchClock.h"
 
 # Compile the real macOS pacing implementation; only external game/platform services are stubbed.
 "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -D__APPLE__ -fprofile-instr-generate -fcoverage-mapping \

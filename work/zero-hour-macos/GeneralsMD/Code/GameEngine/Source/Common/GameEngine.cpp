@@ -940,6 +940,12 @@ void GameEngine::reset()
 /// -----------------------------------------------------------------------------------------------
 void GameEngine::resetSubsystems()
 {
+#ifdef __APPLE__
+    m_matchClock.reset();
+    m_logicWallTime = {};
+    m_fixedStepBudget.reset();
+    m_pendingLogicSteps = 0;
+#endif
 	// TheSuperHackers @fix xezon 09/06/2025 Reset GameLogic first to purge all world objects early.
 	// This avoids potentially catastrophic issues when objects and subsystems have cross dependencies.
 	TheGameLogic->reset();
@@ -1049,6 +1055,10 @@ void GameEngine::update()
     const double elapsed = m_logicWallTime.time_since_epoch().count() == 0 ? 0.0 :
         std::chrono::duration<double>(perfStart - m_logicWallTime).count();
     m_logicWallTime = perfStart;
+    const bool showMatchClock = TheGameLogic->isInGame() && !TheGameLogic->isInShellGame() &&
+        !TheGameLogic->isInReplayGame() && !TheGameLogic->isLoadingMap() && !TheGameLogic->isLoadingSave();
+    m_matchClock.update(elapsed, perfFrameBefore, showMatchClock,
+        !isTimeFrozen() && !isGameHalted(), LOGICFRAMES_PER_SECOND);
     if (TheNetwork == nullptr && TheGameLogic->isInGame() && !isTimeFrozen() && !isGameHalted()) {
         const double hz = TheFramePacer->getActualLogicTimeScaleFps();
         m_pendingLogicSteps = m_fixedStepBudget.advance(elapsed, hz);

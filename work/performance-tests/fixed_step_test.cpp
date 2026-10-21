@@ -1,4 +1,5 @@
 #include "Common/FixedStepBudget.h"
+#include "Common/MatchClock.h"
 #include <cassert>
 #include <cstdio>
 #include <limits>
@@ -71,5 +72,36 @@ int main() {
                 assert(measured >= 59 && measured <= 61);
         }
     }
+    // One real hour stays one displayed hour at every simulation speed.
+    for (int logicHz : {30, 60, 120, 480}) {
+        MatchClock clock;
+        clock.update(0, 0, true, true, 60);
+        for (unsigned second = 1; second <= 3600; ++second)
+            clock.update(1, second * logicHz, true, true, 60);
+        assert(clock.elapsedSeconds() == 3600);
+    }
+    MatchClock clock;
+    clock.update(10, 0, false, false, 60);
+    clock.update(10, 0, true, true, 60); // Loading interval is not play time.
+    clock.update(2, 120, true, true, 60); // A long render frame still counts.
+    assert(clock.elapsedSeconds() == 2);
+    clock.update(100, 120, true, false, 60); // Pause/freeze/network halt.
+    clock.update(100, 120, true, true, 60); // Resume does not charge paused time.
+    assert(clock.elapsedSeconds() == 2);
+    clock.update(1, 240, true, true, 60);
+    assert(clock.elapsedSeconds() == 3);
+    clock.update(-1, 240, true, true, 60);
+    clock.update(std::numeric_limits<double>::infinity(), 240, true, true, 60);
+    assert(clock.elapsedSeconds() == 3);
+    clock.update(0, 60, true, true, 60); // Rewinding/loading establishes a new baseline.
+    assert(clock.elapsedSeconds() == 1);
+    clock.reset();
+    clock.update(100, 7200, true, true, 60); // Existing save baseline, then real time.
+    clock.update(1, 7320, true, true, 60);
+    assert(clock.elapsedSeconds() == 121);
+    clock.reset();
+    clock.update(0, 0, true, true, 0);
+    assert(clock.elapsedSeconds() == 0);
+    puts("Match clock: real time at 0.5x/1x/2x/8x, pauses, stalls, transitions and loads passed.");
     puts("Fixed-step pacing: one-hour, jitter, pause and lockstep deadline tests passed.");
 }

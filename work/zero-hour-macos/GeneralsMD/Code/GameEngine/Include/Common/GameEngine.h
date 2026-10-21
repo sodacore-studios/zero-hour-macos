@@ -44,6 +44,7 @@ class FileSystem;
 class Mouse;
 #ifdef __APPLE__
 #include "Common/FixedStepBudget.h"
+#include "Common/MatchClock.h"
 #include <chrono>
 #endif
 
@@ -74,6 +75,10 @@ public:
 
 	virtual void execute();											/**< The "main loop" of the game engine.
 																								 It will not return until the game exits. */
+
+#ifdef __APPLE__
+    double getElapsedMatchSeconds() const { return m_matchClock.elapsedSeconds(); }
+#endif
 
 	static Bool isTimeFrozen(); ///< Returns true if a script has frozen time.
 	static Bool isGameHalted(); ///< Returns true if the game is paused or the network is stalling.
@@ -109,6 +114,7 @@ protected:
 	virtual AudioManager *createAudioManager(Bool dummy) = 0;				///< Factory for Audio Manager
 
 #ifdef __APPLE__
+    MatchClock m_matchClock;
     FixedStepBudget m_fixedStepBudget;
     std::chrono::steady_clock::time_point m_logicWallTime{};
     unsigned m_pendingLogicSteps = 0;

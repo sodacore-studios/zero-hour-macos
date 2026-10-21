@@ -56,3 +56,11 @@ The original slider uses a 30-based scale: 15 means 0.5x, 30 means 1x, and 60 me
 Version 0.3.0 incorrectly sent the slider value only to the render limiter. The corrected startup path stores a separate local match rate, and the fixed-step scheduler queries the same effective rate as the pause and network logic. Explicit local time-scale shortcuts still take precedence; new-game preparation clears previous local speed overrides. Network matches always use the network rate. Save files do not persist the local pacing preference; a loaded game starts at normal speed.
 
 Regression tests compile the production `FramePacer.cpp` with isolated substitutes for platform timing and game services. They verify every slider value from 15 through 60 over one simulated minute at 15, 30, 60 and 144 render FPS, plus unlimited, pause/halt, network precedence and reset behavior. These deterministic tests do not substitute for an interactive UI test.
+
+## Real-time match clock
+
+The macOS live-match HUD displays active wall-clock time independently of the selected simulation rate. At 2x speed, one real minute still displays as one minute while units and production advance twice as far. The clock uses the engine's monotonic elapsed time, excludes pauses, script freezes, network stalls and loading transitions, and counts slow render frames without slowing the displayed clock. It is a presentation-only value and is never an input to simulation, saved state or network CRCs.
+
+Replays retain their simulation-position clock so seeking and fast-forwarding remain meaningful. Existing saves do not record historical wall-clock duration; loading initializes the display from the saved simulation-time baseline, then advances in real active time. Exact pre-save wall time cannot be recovered from older saves.
+
+Deterministic clock tests cover one real hour at 0.5x, 1x, 2x and 8x, pause/resume, long render frames, invalid elapsed values, resets and save baselines. The clock and scheduling helpers have 100% line and branch coverage in these tests.
