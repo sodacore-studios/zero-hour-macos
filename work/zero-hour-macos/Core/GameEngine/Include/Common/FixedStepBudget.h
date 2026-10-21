@@ -14,9 +14,12 @@ public:
         }
         // A long suspension is not gameplay time. Resume without a large burst.
         if (elapsed > 0.25) { reset(); return 1; }
-        debt = (std::min)(debt + elapsed * hz, double(MaxSteps));
-        const unsigned steps = static_cast<unsigned>(debt + 1e-9);
-        debt = (std::max)(0.0, debt - steps);
+        debt += elapsed * hz;
+        const double wholeSteps = std::floor(debt + 1e-9);
+        const unsigned steps = static_cast<unsigned>((std::min)(wholeSteps, double(MaxSteps)));
+        // Drop excess whole ticks, but retain fractional credit near the budget
+        // ceiling (for example 118 logic Hz at 15 render Hz).
+        debt = (std::max)(0.0, debt - wholeSteps);
         return steps;
     }
     void reset() { debt = 0; }

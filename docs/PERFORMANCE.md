@@ -48,3 +48,11 @@ Final package verification (build 20261021.2): the entire 28:35 replay completed
 ## Publication acceptance — 2026-10-21
 
 After the preview measurements above, the user reported that the performance test passed and approved GitHub publication. Display mode, duration and live multiplayer conditions were not specified. The release adds a launcher updater while retaining the accepted simulation changes. Earlier pending-test statements above record the automated preview stage; see VERIFICATION.md for the current acceptance boundary and BUILD.md for the delivery pipeline.
+
+## Skirmish speed selection
+
+The original slider uses a 30-based scale: 15 means 0.5x, 30 means 1x, and 60 means 2x. The Apple Silicon engine converts these values to 30, 60 and 120 fixed logic ticks per wall-clock second respectively. Simulation step size and game rules remain unchanged. The `--` position requests unrestricted local speed, subject to the existing eight-tick budget per render update. It is intended for fast-forwarding; its achieved speed depends on hardware and rendering.
+
+Version 0.3.0 incorrectly sent the slider value only to the render limiter. The corrected startup path stores a separate local match rate, and the fixed-step scheduler queries the same effective rate as the pause and network logic. Explicit local time-scale shortcuts still take precedence; new-game preparation clears previous local speed overrides. Network matches always use the network rate. Save files do not persist the local pacing preference; a loaded game starts at normal speed.
+
+Regression tests compile the production `FramePacer.cpp` with isolated substitutes for platform timing and game services. They verify every slider value from 15 through 60 over one simulated minute at 15, 30, 60 and 144 render FPS, plus unlimited, pause/halt, network precedence and reset behavior. These deterministic tests do not substitute for an interactive UI test.

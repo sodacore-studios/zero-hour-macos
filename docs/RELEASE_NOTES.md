@@ -1,13 +1,12 @@
-## Performance and automatic updates
+## Skirmish game speed
 
-- Keep game simulation at its fixed 60 Hz rate when rendering falls below 60 FPS. The controlled 30 FPS case improves from half speed to normal game-clock speed; this does not claim doubled GPU frame rate.
-- Preserve network command readiness, simulation ordering and CRC propagation during catch-up. Measure network performance from completed simulation ticks rather than render FPS.
-- Include the camera terrain-ray fix and existing fullscreen, WASD and ultrawide options.
-- Add automatic GitHub release updates with optional Keychain authentication, Ed25519 manifests, archive checksums, idle-only installation and recoverable app backups.
-- Include deterministic tests, coverage artifacts, native ARM64 binaries and corresponding sources. The Abrams prototype remains separate.
+- Fix the Skirmish speed slider being ignored by the decoupled macOS simulation scheduler.
+- Interpret the original slider scale consistently: 15 = half speed, 30 = normal speed, 60 = double speed. The far-right `--` setting runs as fast as the bounded catch-up budget and hardware allow.
+- Preserve fractional tick credit at the catch-up ceiling so intermediate high-speed settings remain accurate at low render rates.
+- Keep render FPS independent from game speed. Changing the graphics frame limit no longer overrides the selected local match speed.
+- Reset the local speed at the start of a new match, campaign, load or replay. Multiplayer continues to use its network-controlled rate.
+- Test every numeric slider position with the production pacing code at 15, 30, 60 and 144 render FPS, plus unlimited, pause/halt, rate overrides and reset behavior. The existing one-hour pacing and network deadline tests also pass.
 
-The user accepted the performance preview on 2026-10-21. Automated replay checks and scheduling tests pass; see `docs/PERFORMANCE.md` and `docs/VERIFICATION.md` for precise scope. The new updater does not change gameplay code. A fresh two-Mac match with the final release binary is not claimed.
+Original game data is required and excluded from downloads. Packages support Apple Silicon and target macOS 13.3 or later; they are ad-hoc signed, not Apple-notarized. Automatic updates use signed manifests. All players and the private server's accepted client CRC must be coordinated using `Version.json` before online play; publication does not update the live server.
 
-Install the ARM64 DMG once to gain the updater. Original game files are required and excluded from downloads. Public GitHub downloads and automatic updates need no account or token. Automatic updates can be configured under Zero Hour → Updates. All players and the private server's accepted client CRC must be coordinated using `Version.json` before online play. The live server is not changed by publication.
-
-Packages are ad-hoc signed, not Apple-notarized. macOS 13.3 is the deployment target; older OS/hardware behavior beyond the documented tests remains unverified.
+A fresh interactive Skirmish session and a two-Mac match with this exact build have not yet been verified.
