@@ -45,6 +45,15 @@ LLVM_PROFILE_FILE="$output/network-frame.profraw" "$output/network-frame-tests"
 "${cov[@]}" show "$output/network-frame-tests" -instr-profile="$output/network-frame.profdata" \
   -format=html -output-dir="$output/html/network-frame" "$output/network-frame.cpp"
 
+# Exercise the actual latency estimator, including disabled debug logging.
+python3 "$root/work/performance-tests/network_latency_test.py" "$output/network-latency.cpp"
+"${compiler[@]}" -std=c++20 -Wall -Wextra -Werror -fprofile-instr-generate -fcoverage-mapping \
+  "$output/network-latency.cpp" -o "$output/network-latency-tests"
+LLVM_PROFILE_FILE="$output/network-latency.profraw" "$output/network-latency-tests"
+"${profdata[@]}" merge -sparse "$output/network-latency.profraw" -o "$output/network-latency.profdata"
+"${cov[@]}" show "$output/network-latency-tests" -instr-profile="$output/network-latency.profdata" \
+  -format=html -output-dir="$output/html/network-latency" "$output/network-latency.cpp"
+
 # An incoming peer can arrive before the outgoing connection is registered.
 python3 "$root/work/performance-tests/incoming_connection_test.py" "$output/incoming-connection.cpp"
 "${compiler[@]}" -std=c++17 -Wall -Wextra -Werror -fprofile-instr-generate -fcoverage-mapping \

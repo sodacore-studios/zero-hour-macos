@@ -35,3 +35,4 @@ Configure(("12","0"));Check((await Call(Request(12))).result==EVersionCheckResul
 Configure(("invalid","100"));Check((await Call(Request(12))).result==EVersionCheckResult.Failed,"Invalid key fell back to legacy");
 Configure(("12","overflow"));Check((await Call(Request(12))).result==EVersionCheckResult.Failed,"Invalid seed admitted");
 Console.WriteLine("PASS: actual VersionCheck controller parses requests, rejects malformed configuration and gates simulation seeds");
+await DiagnosticsTests.Run();

@@ -133,7 +133,11 @@ namespace GenOnlineService.Controllers
 								}
 
 								await using var db = await _dbFactory.CreateDbContextAsync();
-								await Database.ConnectionOutcomes.StoreConnectionOutcome(db, protocol, outcome);
+                                await Database.ConnectionOutcomes.StoreConnectionOutcome(db, protocol, outcome);
+                                if (data["target"].TryGetInt64(out long targetUser) && playerLobby.GetMemberFromUserID(targetUser) != null)
+                                    ServerDiagnostics.Record(new(DiagnosticKind.ConnectionOutcome)
+                                    { Lobby = playerLobby.LobbyID, Match = playerLobby.MatchID, Player = source_user, Peer = targetUser,
+                                      Direct = bDirect, IPv4 = protocol == EIPVersion.IPV4, State = (int)in_outcome });
 
 								Response.StatusCode = (int)HttpStatusCode.OK;
 							}

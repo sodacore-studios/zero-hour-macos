@@ -17,6 +17,8 @@
 *.tar
 *.tar.gz
 *.log
+**/Diagnostics/
+diagnostics-*.jsonl
 .env
 Online-Einstellungen.json
 

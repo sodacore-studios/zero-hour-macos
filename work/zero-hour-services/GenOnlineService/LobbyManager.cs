@@ -616,7 +616,8 @@ namespace GenOnlineService
 
 			// Reported outcomes are per-match, not per-lobby. Nothing guards a lobby from entering INGAME
 			// more than once, so drop anything carried over from a previous match on this lobby.
-			ReportedOutcomes.Clear();
+            ReportedOutcomes.Clear();
+            ServerDiagnostics.Record(new(DiagnosticKind.MatchAssigned) { Lobby = LobbyID, Match = MatchID });
 
 			// store on each player
 			foreach (LobbyMember member in Members)
@@ -755,7 +756,8 @@ namespace GenOnlineService
 			DateTime abandonTime = DateTime.UtcNow;
 			if (TimePlayerAbandonedIngame.TryAdd(userId, abandonTime))
 			{
-				Console.WriteLine("[Lobby {0}] Recorded in-game abandon for user {1} at {2:O}", LobbyID, userId, abandonTime);
+                ServerDiagnostics.Record(new(DiagnosticKind.PlayerDisconnected) { Lobby = LobbyID, Match = MatchID, Player = userId });
+                Console.WriteLine("[Lobby {0}] Recorded in-game abandon for user {1} at {2:O}", LobbyID, userId, abandonTime);
 			}
 		}
 
@@ -767,7 +769,8 @@ namespace GenOnlineService
 		{
 			if (TimePlayerAbandonedIngame.TryRemove(userId, out _))
 			{
-				Console.WriteLine("[Lobby {0}] Cleared in-game abandon record for reconnected user {1}", LobbyID, userId);
+                ServerDiagnostics.Record(new(DiagnosticKind.PlayerReconnected) { Lobby = LobbyID, Match = MatchID, Player = userId });
+                Console.WriteLine("[Lobby {0}] Cleared in-game abandon record for reconnected user {1}", LobbyID, userId);
 			}
 		}
 
@@ -780,7 +783,8 @@ namespace GenOnlineService
 		{
 			if (ReportedOutcomes.TryAdd(userId, bWon))
 			{
-				Console.WriteLine("[Lobby {0}] Recorded reported outcome for user {1}: won={2}", LobbyID, userId, bWon);
+                ServerDiagnostics.Record(new(DiagnosticKind.PlayerOutcome) { Lobby = LobbyID, Match = MatchID, Player = userId, Won = bWon });
+                Console.WriteLine("[Lobby {0}] Recorded reported outcome for user {1}: won={2}", LobbyID, userId, bWon);
 			}
 		}
 
@@ -1587,8 +1591,10 @@ public async Task FinalizeACChecks()
 		{
 			await RunExclusiveAsync(() =>
 			{
-				State = state;
-				return Task.CompletedTask;
+                if (State != state)
+                    ServerDiagnostics.Record(new(DiagnosticKind.LobbyState) { Lobby = LobbyID, Match = MatchID, State = (int)state });
+                State = state;
+                return Task.CompletedTask;
 			});
 
 			// if start, init our AC probe
